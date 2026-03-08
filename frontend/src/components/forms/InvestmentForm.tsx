@@ -1,5 +1,6 @@
 'use client';
 import { usePlan } from '../../context/PlanContext';
+import NumericInput from './NumericInput';
 
 export default function InvestmentForm() {
   const { plan, updatePlan } = usePlan();
@@ -19,11 +20,10 @@ export default function InvestmentForm() {
           <div>
             <label className="block text-sm text-gray-600 mb-1">月間投資積立額（合計）</label>
             <div className="relative">
-              <input
-                type="number"
+              <NumericInput
                 className="w-full border rounded-lg px-3 py-2 pr-10"
                 value={investment.monthlyInvestment}
-                onChange={(e) => update('monthlyInvestment', Number(e.target.value))}
+                onChange={(value) => update('monthlyInvestment', value)}
               />
               <span className="absolute right-3 top-2 text-gray-400 text-sm">円</span>
             </div>
@@ -31,12 +31,12 @@ export default function InvestmentForm() {
           <div>
             <label className="block text-sm text-gray-600 mb-1">想定年利回り (%)</label>
             <div className="relative">
-              <input
-                type="number"
+              <NumericInput
                 step="0.1"
+                allowDecimal
                 className="w-full border rounded-lg px-3 py-2 pr-10"
                 value={investment.expectedReturn}
-                onChange={(e) => update('expectedReturn', Number(e.target.value))}
+                onChange={(value) => update('expectedReturn', value)}
               />
               <span className="absolute right-3 top-2 text-gray-400 text-sm">%</span>
             </div>
@@ -44,11 +44,10 @@ export default function InvestmentForm() {
           <div>
             <label className="block text-sm text-gray-600 mb-1">NISA月額</label>
             <div className="relative">
-              <input
-                type="number"
+              <NumericInput
                 className="w-full border rounded-lg px-3 py-2 pr-10"
                 value={investment.nisaMonthly}
-                onChange={(e) => update('nisaMonthly', Number(e.target.value))}
+                onChange={(value) => update('nisaMonthly', value)}
               />
               <span className="absolute right-3 top-2 text-gray-400 text-sm">円</span>
             </div>
@@ -56,11 +55,10 @@ export default function InvestmentForm() {
           <div>
             <label className="block text-sm text-gray-600 mb-1">iDeCo月額</label>
             <div className="relative">
-              <input
-                type="number"
+              <NumericInput
                 className="w-full border rounded-lg px-3 py-2 pr-10"
                 value={investment.idecoMonthly}
-                onChange={(e) => update('idecoMonthly', Number(e.target.value))}
+                onChange={(value) => update('idecoMonthly', value)}
               />
               <span className="absolute right-3 top-2 text-gray-400 text-sm">円</span>
             </div>
