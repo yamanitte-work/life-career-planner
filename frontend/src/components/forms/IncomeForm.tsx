@@ -1,5 +1,6 @@
 'use client';
 import { usePlan } from '../../context/PlanContext';
+import NumericInput from './NumericInput';
 
 function MoneyInput({ label, value, onChange, note }: { label: string; value: number; onChange: (v: number) => void; note?: string }) {
   return (
@@ -7,11 +8,10 @@ function MoneyInput({ label, value, onChange, note }: { label: string; value: nu
       <label className="block text-sm text-gray-600 mb-1">{label}</label>
       {note && <p className="text-xs text-gray-400 mb-1">{note}</p>}
       <div className="relative">
-        <input
-          type="number"
+        <NumericInput
           className="w-full border rounded-lg px-3 py-2 pr-10"
           value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
+          onChange={onChange}
         />
         <span className="absolute right-3 top-2 text-gray-400 text-sm">円</span>
       </div>

@@ -1,6 +1,7 @@
 'use client';
 import { usePlan } from '../../context/PlanContext';
 import { Person } from '../../lib/types';
+import NumericInput from './NumericInput';
 
 const employmentTypes = ['正社員', '契約社員', '派遣', '自営業', 'パート', '無職'];
 const workStyles = ['出社', 'ハイブリッド', '在宅'];
@@ -22,11 +23,10 @@ function PersonForm({ label, person, onChange }: { label: string; person: Person
         </div>
         <div>
           <label className="block text-sm text-gray-600 mb-1">年齢</label>
-          <input
-            type="number"
+          <NumericInput
             className="w-full border rounded-lg px-3 py-2"
             value={person.age}
-            onChange={(e) => onChange({ ...person, age: Number(e.target.value) })}
+            onChange={(age) => onChange({ ...person, age })}
           />
         </div>
         <div>
@@ -59,11 +59,10 @@ function PersonForm({ label, person, onChange }: { label: string; person: Person
         </div>
         <div>
           <label className="block text-sm text-gray-600 mb-1">通勤時間（分）</label>
-          <input
-            type="number"
+          <NumericInput
             className="w-full border rounded-lg px-3 py-2"
             value={person.commuteMinutes}
-            onChange={(e) => onChange({ ...person, commuteMinutes: Number(e.target.value) })}
+            onChange={(commuteMinutes) => onChange({ ...person, commuteMinutes })}
           />
         </div>
         <div>

@@ -30,6 +30,7 @@ select,
 textarea {
   color: #111827;
   background-color: #ffffff;
+  opacity: 1;
 }
 
 input::placeholder,
