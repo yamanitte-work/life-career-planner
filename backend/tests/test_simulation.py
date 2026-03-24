@@ -1,8 +1,9 @@
-import pytest
+from datetime import datetime
+
 from app.services.simulation import run_simulation
 
 
-def create_base_plan():
+def _base_plan():
     return {
         "household": {
             "self": {"age": 30, "name": "テスト"},
@@ -47,6 +48,8 @@ def create_base_plan():
         "investment": {
             "monthlyInvestment": 50000,
             "expectedReturn": 5,
+            "nisaMonthly": 30000,
+            "idecoMonthly": 23000,
         },
         "lifeEvents": [],
     }
@@ -54,49 +57,128 @@ def create_base_plan():
 
 class TestRunSimulation:
     def test_returns_correct_number_of_years(self):
-        result = run_simulation(create_base_plan(), years=10)
+        result = run_simulation(_base_plan(), years=10)
         assert len(result) == 10
 
-    def test_caps_years_at_100_minus_age(self):
-        plan = create_base_plan()
-        plan["household"]["self"]["age"] = 90
+    def test_limits_years_to_100_minus_age(self):
+        plan = _base_plan()
+        plan["household"]["self"]["age"] = 95
         result = run_simulation(plan, years=30)
-        assert len(result) == 10
+        assert len(result) == 5
 
-    def test_correct_age_progression(self):
-        result = run_simulation(create_base_plan(), years=5)
-        assert result[0]["age"] == 30
-        assert result[4]["age"] == 34
-        assert result[0]["spouseAge"] == 28
-        assert result[4]["spouseAge"] == 32
+    def test_returns_empty_for_age_100(self):
+        plan = _base_plan()
+        plan["household"]["self"]["age"] = 100
+        result = run_simulation(plan, years=10)
+        assert len(result) == 0
 
-    def test_annual_income_calculation(self):
-        result = run_simulation(create_base_plan(), years=1)
-        assert result[0]["annualIncome"] == 9900000
+    def test_first_year_is_current_year(self):
+        result = run_simulation(_base_plan(), years=5)
+        assert result[0]["year"] == datetime.now().year
 
-    def test_investments_increase_with_positive_return(self):
-        result = run_simulation(create_base_plan(), years=10)
-        for i in range(1, len(result)):
-            assert result[i]["investments"] > result[i - 1]["investments"]
-
-    def test_debt_reduces_with_monthly_payments(self):
-        plan = create_base_plan()
-        plan["debt"]["mortgageLoan"] = 30000000
-        plan["debt"]["mortgageMonthly"] = 100000
+    def test_ages_increment(self):
+        plan = _base_plan()
         result = run_simulation(plan, years=5)
-        assert result[0]["totalDebt"] < 30000000
-        for i in range(1, len(result)):
-            assert result[i]["totalDebt"] <= result[i - 1]["totalDebt"]
+        for i, row in enumerate(result):
+            assert row["age"] == 30 + i
+            assert row["spouseAge"] == 28 + i
+
+    def test_annual_income_calculated_correctly(self):
+        plan = _base_plan()
+        result = run_simulation(plan, years=1)
+        expected = (
+            plan["income"]["selfAnnualIncome"]
+            + plan["income"]["spouseAnnualIncome"]
+            + plan["income"]["selfBonus"]
+            + plan["income"]["spouseBonus"]
+            + plan["income"]["sideJobIncome"]
+            + plan["income"]["otherIncome"]
+        )
+        assert result[0]["annualIncome"] == expected
+
+    def test_investment_compound_growth(self):
+        plan = _base_plan()
+        plan["income"]["selfAnnualIncome"] = 10000000
+        plan["income"]["spouseAnnualIncome"] = 0
+        plan["income"]["selfBonus"] = 0
+        plan["income"]["spouseBonus"] = 0
+        plan["expense"] = {k: 0 for k in plan["expense"]}
+        plan["assets"] = {k: 0 for k in plan["assets"]}
+        plan["assets"]["securities"] = 1000000
+        plan["debt"] = {k: 0 for k in plan["debt"]}
+        plan["investment"]["monthlyInvestment"] = 0
+        plan["investment"]["expectedReturn"] = 10
+
+        result = run_simulation(plan, years=2)
+        assert abs(result[0]["investments"] - 1100000) < 1
+        assert abs(result[1]["investments"] - 1210000) < 1
+
+    def test_debt_decreases(self):
+        plan = _base_plan()
+        plan["income"]["selfAnnualIncome"] = 10000000
+        plan["income"]["spouseAnnualIncome"] = 0
+        plan["income"]["selfBonus"] = 0
+        plan["income"]["spouseBonus"] = 0
+        plan["expense"] = {k: 0 for k in plan["expense"]}
+        plan["assets"] = {k: 0 for k in plan["assets"]}
+        plan["debt"] = {k: 0 for k in plan["debt"]}
+        plan["debt"]["mortgageLoan"] = 10000000
+        plan["debt"]["mortgageMonthly"] = 100000
+        plan["investment"]["monthlyInvestment"] = 0
+        plan["investment"]["expectedReturn"] = 0
+
+        result = run_simulation(plan, years=3)
+        assert result[0]["totalDebt"] == 10000000 - 1200000
+        assert result[1]["totalDebt"] == 10000000 - 2400000
+
+    def test_debt_does_not_go_below_zero(self):
+        plan = _base_plan()
+        plan["income"]["selfAnnualIncome"] = 10000000
+        plan["income"]["spouseAnnualIncome"] = 0
+        plan["income"]["selfBonus"] = 0
+        plan["income"]["spouseBonus"] = 0
+        plan["expense"] = {k: 0 for k in plan["expense"]}
+        plan["assets"] = {k: 0 for k in plan["assets"]}
+        plan["debt"] = {k: 0 for k in plan["debt"]}
+        plan["debt"]["mortgageLoan"] = 500000
+        plan["debt"]["mortgageMonthly"] = 100000
+        plan["investment"]["monthlyInvestment"] = 0
+        plan["investment"]["expectedReturn"] = 0
+
+        result = run_simulation(plan, years=3)
+        assert result[0]["totalDebt"] == 0
+        assert result[1]["totalDebt"] == 0
+
+    def test_net_assets_equals_total_minus_debt(self):
+        result = run_simulation(_base_plan(), years=5)
+        for row in result:
+            assert abs(row["netAssets"] - (row["totalAssets"] - row["totalDebt"])) < 1
+
+    def test_zero_income_and_expense(self):
+        plan = _base_plan()
+        plan["income"] = {k: 0 for k in plan["income"]}
+        plan["expense"] = {k: 0 for k in plan["expense"]}
+        plan["debt"] = {k: 0 for k in plan["debt"]}
+        plan["investment"]["monthlyInvestment"] = 0
+        plan["investment"]["expectedReturn"] = 0
+        plan["assets"] = {k: 0 for k in plan["assets"]}
+        plan["assets"]["savings"] = 1000000
+
+        result = run_simulation(plan, years=5)
+        assert len(result) == 5
+        for row in result:
+            assert row["totalAssets"] == 1000000
+            assert row["annualSavings"] == 0
 
     def test_empty_events_when_no_life_events(self):
-        result = run_simulation(create_base_plan(), years=3)
+        result = run_simulation(_base_plan(), years=3)
         for r in result:
             assert r["events"] == []
 
 
 class TestLifeEvents:
     def test_one_time_cost_applied_in_correct_year(self):
-        plan = create_base_plan()
+        plan = _base_plan()
         plan["lifeEvents"] = [
             {
                 "id": "t1",
@@ -112,7 +194,7 @@ class TestLifeEvents:
             }
         ]
         with_events = run_simulation(plan, years=5)
-        plan_no_events = create_base_plan()
+        plan_no_events = _base_plan()
         without_events = run_simulation(plan_no_events, years=5)
 
         assert with_events[0]["annualExpense"] == without_events[0]["annualExpense"]
@@ -121,7 +203,7 @@ class TestLifeEvents:
         assert with_events[3]["annualExpense"] == without_events[3]["annualExpense"]
 
     def test_ongoing_cost_changes_for_duration(self):
-        plan = create_base_plan()
+        plan = _base_plan()
         plan["lifeEvents"] = [
             {
                 "id": "t2",
@@ -137,7 +219,7 @@ class TestLifeEvents:
             }
         ]
         with_events = run_simulation(plan, years=6)
-        without_events = run_simulation(create_base_plan(), years=6)
+        without_events = run_simulation(_base_plan(), years=6)
 
         assert with_events[0]["annualExpense"] == without_events[0]["annualExpense"]
         assert with_events[1]["annualExpense"] == without_events[1]["annualExpense"] + 600000
@@ -146,7 +228,7 @@ class TestLifeEvents:
         assert with_events[4]["annualExpense"] == without_events[4]["annualExpense"]
 
     def test_permanent_income_changes_with_duration_zero(self):
-        plan = create_base_plan()
+        plan = _base_plan()
         plan["lifeEvents"] = [
             {
                 "id": "t3",
@@ -162,7 +244,7 @@ class TestLifeEvents:
             }
         ]
         result = run_simulation(plan, years=6)
-        base = run_simulation(create_base_plan(), years=6)
+        base = run_simulation(_base_plan(), years=6)
 
         assert result[0]["annualIncome"] == base[0]["annualIncome"]
         assert result[2]["annualIncome"] == base[2]["annualIncome"]
@@ -172,7 +254,7 @@ class TestLifeEvents:
         assert result[5]["annualIncome"] == base[5]["annualIncome"] + 1000000
 
     def test_event_names_recorded_in_correct_year(self):
-        plan = create_base_plan()
+        plan = _base_plan()
         plan["lifeEvents"] = [
             {
                 "id": "t4",
@@ -193,7 +275,7 @@ class TestLifeEvents:
         assert result[2]["events"] == []
 
     def test_event_at_year_offset_zero(self):
-        plan = create_base_plan()
+        plan = _base_plan()
         plan["lifeEvents"] = [
             {
                 "id": "y0",
@@ -209,13 +291,13 @@ class TestLifeEvents:
             }
         ]
         result = run_simulation(plan, years=3)
-        base = run_simulation(create_base_plan(), years=3)
+        base = run_simulation(_base_plan(), years=3)
         assert result[0]["annualExpense"] == base[0]["annualExpense"] + 1000000
         assert result[0]["events"] == ["即時イベント"]
         assert result[1]["annualExpense"] == base[1]["annualExpense"]
 
     def test_negative_income_change_retirement(self):
-        plan = create_base_plan()
+        plan = _base_plan()
         plan["lifeEvents"] = [
             {
                 "id": "ret",
@@ -231,12 +313,12 @@ class TestLifeEvents:
             }
         ]
         result = run_simulation(plan, years=5)
-        base = run_simulation(create_base_plan(), years=5)
+        base = run_simulation(_base_plan(), years=5)
         assert result[2]["annualIncome"] == base[2]["annualIncome"] - 3000000
         assert result[4]["annualIncome"] == base[4]["annualIncome"] - 3000000
 
     def test_multiple_events_same_year(self):
-        plan = create_base_plan()
+        plan = _base_plan()
         plan["lifeEvents"] = [
             {
                 "id": "a",

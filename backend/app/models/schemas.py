@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, JSON
 from sqlalchemy.orm import DeclarativeBase
 from pydantic import BaseModel, Field
-from typing import Optional, Literal
+
 from enum import Enum
 import uuid
 
@@ -29,7 +29,7 @@ class PersonSchema(BaseModel):
 
 class HouseholdSchema(BaseModel):
     self_: PersonSchema = Field(alias="self", default_factory=PersonSchema)
-    spouse: PersonSchema = PersonSchema()
+    spouse: PersonSchema = Field(default_factory=PersonSchema)
     residenceArea: str = "東京都"
     familyComposition: str = "夫婦のみ"
     hasChildren: bool = False
@@ -116,13 +116,13 @@ class LifeEventSchema(BaseModel):
 
 
 class LifePlanSchema(BaseModel):
-    household: HouseholdSchema = HouseholdSchema()
-    income: IncomeSchema = IncomeSchema()
-    expense: ExpenseSchema = ExpenseSchema()
-    assets: AssetSchema = AssetSchema()
-    debt: DebtSchema = DebtSchema()
-    investment: InvestmentSchema = InvestmentSchema()
-    lifeEvents: list[LifeEventSchema] = []
+    household: HouseholdSchema = Field(default_factory=HouseholdSchema)
+    income: IncomeSchema = Field(default_factory=IncomeSchema)
+    expense: ExpenseSchema = Field(default_factory=ExpenseSchema)
+    assets: AssetSchema = Field(default_factory=AssetSchema)
+    debt: DebtSchema = Field(default_factory=DebtSchema)
+    investment: InvestmentSchema = Field(default_factory=InvestmentSchema)
+    lifeEvents: list[LifeEventSchema] = Field(default_factory=list)
 
 
 class SimulationRequest(BaseModel):

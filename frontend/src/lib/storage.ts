@@ -77,21 +77,32 @@ export function savePlan(plan: LifePlan): void {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function deepMerge<T extends Record<string, any>>(defaults: T, stored: any): T {
+  if (!stored || typeof stored !== 'object') return defaults;
+  const result = { ...defaults };
+  for (const key of Object.keys(defaults) as (keyof T)[]) {
+    const defaultVal = defaults[key];
+    const storedVal = stored[key];
+    if (storedVal === undefined || storedVal === null) continue;
+    if (Array.isArray(defaultVal)) {
+      (result as Record<string, unknown>)[key as string] = Array.isArray(storedVal) ? storedVal : defaultVal;
+    } else if (typeof defaultVal === 'object' && defaultVal !== null && !Array.isArray(defaultVal)) {
+      (result as Record<string, unknown>)[key as string] = deepMerge(defaultVal as Record<string, unknown>, storedVal);
+    } else {
+      (result as Record<string, unknown>)[key as string] = storedVal;
+    }
+  }
+  return result;
+}
+
 export function loadPlan(): LifePlan {
   if (typeof window === 'undefined') return defaultLifePlan;
   const stored = localStorage.getItem(STORAGE_KEY);
   if (!stored) return defaultLifePlan;
   try {
     const parsed = JSON.parse(stored);
-    return {
-      household: { ...defaultLifePlan.household, ...parsed.household, self: { ...defaultLifePlan.household.self, ...parsed.household?.self }, spouse: { ...defaultLifePlan.household.spouse, ...parsed.household?.spouse } },
-      income: { ...defaultLifePlan.income, ...parsed.income },
-      expense: { ...defaultLifePlan.expense, ...parsed.expense },
-      assets: { ...defaultLifePlan.assets, ...parsed.assets },
-      debt: { ...defaultLifePlan.debt, ...parsed.debt },
-      investment: { ...defaultLifePlan.investment, ...parsed.investment },
-      lifeEvents: Array.isArray(parsed.lifeEvents) ? parsed.lifeEvents : [],
-    };
+    return deepMerge(defaultLifePlan, parsed);
   } catch {
     return defaultLifePlan;
   }

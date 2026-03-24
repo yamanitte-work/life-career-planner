@@ -1,6 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { usePlan } from '../../context/PlanContext';
+import { sampleLifePlan } from '../../lib/sampleData';
 import BasicInfoForm from '../../components/forms/BasicInfoForm';
 import IncomeForm from '../../components/forms/IncomeForm';
 import ExpenseForm from '../../components/forms/ExpenseForm';
@@ -20,6 +22,7 @@ const steps = [
 export default function SetupPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const router = useRouter();
+  const { updatePlan } = usePlan();
 
   const StepComponent = steps[currentStep].component;
 
@@ -35,6 +38,10 @@ export default function SetupPage() {
     if (currentStep > 0) {
       setCurrentStep((s) => s - 1);
     }
+  };
+
+  const handleLoadSample = () => {
+    updatePlan(sampleLifePlan);
   };
 
   return (
@@ -73,9 +80,17 @@ export default function SetupPage() {
 
         {/* Form */}
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-6">
-            STEP {currentStep + 1}: {steps[currentStep].title}
-          </h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-gray-800">
+              STEP {currentStep + 1}: {steps[currentStep].title}
+            </h2>
+            <button
+              onClick={handleLoadSample}
+              className="text-xs bg-amber-100 text-amber-700 border border-amber-300 px-3 py-1.5 rounded-lg hover:bg-amber-200 transition"
+            >
+              📋 サンプルデータを読み込む
+            </button>
+          </div>
           <StepComponent />
         </div>
 

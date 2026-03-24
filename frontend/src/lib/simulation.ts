@@ -69,7 +69,10 @@ export function runSimulation(plan: LifePlan, years: number = 30): SimulationYea
       // One-time cost applies only in the start year
       if (y === eventStartYear) {
         eventOneTimeCost += event.oneTimeCost;
-        eventNames.push(event.name);
+        const eventName = (event.name ?? '').trim();
+        if (eventName) {
+          eventNames.push(eventName);
+        }
       }
 
       // Ongoing changes apply for the duration

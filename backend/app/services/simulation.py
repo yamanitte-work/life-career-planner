@@ -63,7 +63,11 @@ def run_simulation(plan: Dict[str, Any], years: int = 30) -> List[Dict]:
 
             if y == event_start:
                 event_one_time_cost += event.get("oneTimeCost", 0)
-                event_names.append(event.get("name", ""))
+                event_name = event.get("name", "")
+                if isinstance(event_name, str):
+                    event_name = event_name.strip()
+                if event_name:
+                    event_names.append(event_name)
 
             if event_start <= y <= event_end:
                 event_annual_cost_change += event.get("annualCostChange", 0)
