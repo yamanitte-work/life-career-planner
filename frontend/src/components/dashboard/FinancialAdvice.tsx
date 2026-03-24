@@ -125,7 +125,7 @@ function generateAdvice(plan: LifePlan): Advice[] {
     if (debtRatio > 0.5) {
       adviceList.push({
         type: 'warning',
-        message: '負債が総資産の50%を超えています。繰上返済の検討もご検討ください。',
+        message: '負債が総資産の50%を超えています。繰上返済をご検討ください。',
       });
     }
   }
