@@ -36,3 +36,21 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 → http://localhost:8000
+
+## テストの実行
+
+### フロントエンド（Vitest）
+Node.js 20.19 以上が必要です（`.nvmrc` 参照）。
+
+```bash
+cd frontend
+npm install
+npm test
+```
+
+### バックエンド（pytest）
+```bash
+cd backend
+pip install -r requirements.txt -r requirements-dev.txt
+pytest tests/
+```

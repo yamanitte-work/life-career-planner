@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { usePlan } from '../../context/PlanContext';
 import { runSimulation, formatMan } from '../../lib/simulation';
 import SummaryCards from '../../components/dashboard/SummaryCards';
+import FinancialAdvice from '../../components/dashboard/FinancialAdvice';
 import AssetProjectionChart from '../../components/charts/AssetProjectionChart';
 import CashflowChart from '../../components/charts/CashflowChart';
 import Link from 'next/link';
@@ -32,6 +33,11 @@ export default function DashboardPage() {
         {/* Summary Cards */}
         <div className="mb-8">
           <SummaryCards current={currentData} plan={plan} />
+        </div>
+
+        {/* Financial Advice */}
+        <div className="mb-8">
+          <FinancialAdvice plan={plan} />
         </div>
 
         {/* Year selector */}
