@@ -1,7 +1,5 @@
 from datetime import datetime
 
-import pytest
-
 from app.services.simulation import run_simulation
 
 
