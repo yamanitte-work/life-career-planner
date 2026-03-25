@@ -34,11 +34,18 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     <div className="bg-white border rounded-lg shadow-lg p-3 text-sm">
       <p className="font-semibold text-gray-700 mb-2">{label}</p>
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      {payload.map((p: any) => (
-        <p key={p.name} style={{ color: p.color }}>
-          {p.name}: {Math.round(p.value / 10000).toLocaleString('ja-JP')}万円
-        </p>
-      ))}
+      {payload.map((p: any) => {
+        const value = p?.value;
+        const display =
+          value == null || typeof value !== 'number' || !Number.isFinite(value)
+            ? '-'
+            : `${Math.round(value / 10000).toLocaleString('ja-JP')}万円`;
+        return (
+          <p key={p.name} style={{ color: p.color }}>
+            {p.name}: {display}
+          </p>
+        );
+      })}
     </div>
   );
 };
@@ -52,8 +59,8 @@ export default function ScenarioComparisonChart({ data1, label1, data2, label2, 
     const age = d1?.age ?? d2?.age ?? i;
     return {
       year: `${year}(${age}歳)`,
-      [label1]: d1?.netAssets ?? null,
-      [label2]: d2?.netAssets ?? null,
+      current: d1?.netAssets ?? null,
+      compare: d2?.netAssets ?? null,
     };
   });
 
@@ -68,14 +75,16 @@ export default function ScenarioComparisonChart({ data1, label1, data2, label2, 
           <Legend wrapperStyle={{ paddingTop: '80px' }} />
           <Line
             type="monotone"
-            dataKey={label1}
+            dataKey="current"
+            name={label1}
             stroke="#6366f1"
             strokeWidth={2}
             dot={false}
           />
           <Line
             type="monotone"
-            dataKey={label2}
+            dataKey="compare"
+            name={label2}
             stroke="#f59e0b"
             strokeWidth={2}
             dot={false}

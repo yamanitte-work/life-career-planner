@@ -60,6 +60,8 @@ export default function ScenarioPanel({ compareScenarioId, onCompareChange, onSc
     <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
       <button
         onClick={() => setExpanded(!expanded)}
+        aria-expanded={expanded}
+        aria-controls="scenario-panel-content"
         className="flex items-center justify-between w-full text-left"
       >
         <h2 className="text-lg font-bold text-gray-700">
@@ -74,7 +76,7 @@ export default function ScenarioPanel({ compareScenarioId, onCompareChange, onSc
       </button>
 
       {expanded && (
-        <div className="mt-4 space-y-4">
+        <div id="scenario-panel-content" className="mt-4 space-y-4">
           {/* Save current plan */}
           <div>
             <p className="text-sm text-gray-600 mb-2">現在のプランをシナリオとして保存:</p>

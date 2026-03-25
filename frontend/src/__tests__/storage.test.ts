@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { saveScenario, loadScenarios, deleteScenario } from '../lib/storage';
+import { saveScenario, loadScenarios, deleteScenario, SCENARIOS_KEY, defaultLifePlan } from '../lib/storage';
 import { Scenario } from '../lib/types';
-import { defaultLifePlan } from '../lib/storage';
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -37,12 +36,12 @@ describe('scenario storage', () => {
     });
 
     it('returns empty array on corrupted data', () => {
-      localStorageMock.setItem('life_career_scenarios', 'not-json{{{');
+      localStorageMock.setItem(SCENARIOS_KEY, 'not-json{{{');
       expect(loadScenarios()).toEqual([]);
     });
 
     it('returns empty array when stored value is not an array', () => {
-      localStorageMock.setItem('life_career_scenarios', JSON.stringify({ id: 'x' }));
+      localStorageMock.setItem(SCENARIOS_KEY, JSON.stringify({ id: 'x' }));
       expect(loadScenarios()).toEqual([]);
     });
   });

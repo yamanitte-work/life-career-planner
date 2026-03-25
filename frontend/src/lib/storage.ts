@@ -96,7 +96,7 @@ function deepMerge<T extends Record<string, any>>(defaults: T, stored: any): T {
   return result;
 }
 
-const SCENARIOS_KEY = 'life_career_scenarios';
+export const SCENARIOS_KEY = 'life_career_scenarios';
 
 export function saveScenario(scenario: Scenario): void {
   if (typeof window === 'undefined') return;
@@ -117,7 +117,16 @@ export function loadScenarios(): Scenario[] {
   try {
     const parsed = JSON.parse(stored);
     if (!Array.isArray(parsed)) return [];
-    return parsed as Scenario[];
+    const scenarios: Scenario[] = [];
+    for (const item of parsed) {
+      if (!item || typeof item !== 'object') continue;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { id, name, createdAt, plan } = item as any;
+      if (typeof id !== 'string' || typeof name !== 'string' || typeof createdAt !== 'number') continue;
+      const mergedPlan = deepMerge(defaultLifePlan, typeof plan === 'object' && plan !== null ? plan : {});
+      scenarios.push({ id, name, createdAt, plan: mergedPlan });
+    }
+    return scenarios;
   } catch {
     return [];
   }
