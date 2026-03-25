@@ -1,0 +1,44 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test)",
+      "Bash(npm run test:watch)",
+      "Bash(npm run build)",
+      "Bash(npm run dev)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npm install)",
+      "Bash(npm ci)",
+      "Bash(pytest*)",
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add*)",
+      "Bash(git commit*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import os,json,subprocess,sys; inp=json.loads(os.environ.get('CLAUDE_TOOL_INPUT','{}')); p=inp.get('file_path',''); targets=['frontend/src/lib/simulation','frontend/src/lib/storage']; (sys.exit(0) if not any(t in p for t in targets) else None); r=subprocess.run(['npm','test'],cwd='frontend',capture_output=True,text=True,timeout=60); print(r.stdout[-3000:] if r.stdout else ''); sys.exit(r.returncode)\"",
+            "timeout": 65000
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import os,json,subprocess; inp=json.loads(os.environ.get('CLAUDE_TOOL_INPUT','{}')); cmd=inp.get('command',''); build='npm run build' in cmd; pwd=subprocess.check_output('pwd',shell=True,text=True).strip() if build else ''; (print('\\n警告: /mnt/c/ 配下では npm run build が Turbopack の制約で失敗する場合があります。\\n/tmp 等の Linux ファイルシステムにコピーしてからビルドしてください。\\n例: cp -r . /tmp/build && cd /tmp/build/frontend && GITHUB_ACTIONS=true npm run build') if (build and pwd.startswith('/mnt/c')) else None)\""
+          }
+        ]
+      }
+    ]
+  }
+}
