@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
 import { saveScenario, loadScenarios, deleteScenario, SCENARIOS_KEY, defaultLifePlan } from '../lib/storage';
 import { Scenario } from '../lib/types';
 
@@ -14,6 +14,7 @@ const localStorageMock = (() => {
 })();
 
 vi.stubGlobal('localStorage', localStorageMock);
+afterAll(() => vi.unstubAllGlobals());
 
 function makeScenario(overrides: Partial<Scenario> = {}): Scenario {
   return {

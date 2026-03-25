@@ -3,10 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { usePlan } from '../../context/PlanContext';
 import { Scenario } from '../../lib/types';
 import { saveScenario, loadScenarios, deleteScenario } from '../../lib/storage';
-
-function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-}
+import { generateId } from '../../lib/id';
 
 interface Props {
   compareScenarioId: string | null;
@@ -35,7 +32,7 @@ export default function ScenarioPanel({ compareScenarioId, onCompareChange, onSc
       id: generateId(),
       name: saveName.trim(),
       createdAt: Date.now(),
-      plan: JSON.parse(JSON.stringify(plan)),
+      plan: structuredClone(plan),
     };
     saveScenario(scenario);
     setSaveName('');
@@ -79,9 +76,12 @@ export default function ScenarioPanel({ compareScenarioId, onCompareChange, onSc
         <div id="scenario-panel-content" className="mt-4 space-y-4">
           {/* Save current plan */}
           <div>
-            <p className="text-sm text-gray-600 mb-2">現在のプランをシナリオとして保存:</p>
+            <label htmlFor="scenario-name" className="text-sm text-gray-600 mb-2 block">
+              現在のプランをシナリオとして保存:
+            </label>
             <div className="flex gap-2">
               <input
+                id="scenario-name"
                 type="text"
                 placeholder="シナリオ名を入力（例: 転職後プラン）"
                 value={saveName}

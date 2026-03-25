@@ -98,6 +98,16 @@ function deepMerge<T extends Record<string, any>>(defaults: T, stored: any): T {
 
 export const SCENARIOS_KEY = 'life_career_scenarios';
 
+function writeScenariosToStorage(scenarios: Scenario[]): void {
+  try {
+    localStorage.setItem(SCENARIOS_KEY, JSON.stringify(scenarios));
+  } catch (error) {
+    // Fail gracefully if localStorage is unavailable or quota is exceeded
+    // eslint-disable-next-line no-console
+    console.error('Failed to save scenarios to localStorage:', error);
+  }
+}
+
 export function saveScenario(scenario: Scenario): void {
   if (typeof window === 'undefined') return;
   const scenarios = loadScenarios();
@@ -107,7 +117,7 @@ export function saveScenario(scenario: Scenario): void {
   } else {
     scenarios.push(scenario);
   }
-  localStorage.setItem(SCENARIOS_KEY, JSON.stringify(scenarios));
+  writeScenariosToStorage(scenarios);
 }
 
 export function loadScenarios(): Scenario[] {
@@ -135,7 +145,7 @@ export function loadScenarios(): Scenario[] {
 export function deleteScenario(id: string): void {
   if (typeof window === 'undefined') return;
   const scenarios = loadScenarios().filter((s) => s.id !== id);
-  localStorage.setItem(SCENARIOS_KEY, JSON.stringify(scenarios));
+  writeScenariosToStorage(scenarios);
 }
 
 export function loadPlan(): LifePlan {
