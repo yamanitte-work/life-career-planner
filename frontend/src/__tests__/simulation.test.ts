@@ -78,7 +78,7 @@ describe('runSimulation', () => {
       expense: { housing: 0, food: 0, utilities: 0, communication: 0, insurance: 0, car: 0, dailyGoods: 0, entertainment: 0, travel: 0, otherFixed: 0, otherVariable: 0 },
       assets: { savings: 0, securities: 1000000, nisa: 0, ideco: 0, cash: 0, other: 0 },
       debt: { mortgageLoan: 0, mortgageMonthly: 0, carLoan: 0, studentLoan: 0, otherDebt: 0 },
-      investment: { monthlyInvestment: 0, expectedReturn: 10, nisaMonthly: 0, idecoMonthly: 0 },
+      investment: { monthlyInvestment: 0, expectedReturn: 10, nisaMonthly: 0, idecoMonthly: 0, salaryGrowthRate: 0, inflationRate: 0, pensionMonthly: 0, pensionStartAge: 65 },
     };
     const results = runSimulation(plan, 2);
     // Year 1: 1000000 * 1.10 = 1100000
@@ -94,7 +94,7 @@ describe('runSimulation', () => {
       expense: { housing: 0, food: 0, utilities: 0, communication: 0, insurance: 0, car: 0, dailyGoods: 0, entertainment: 0, travel: 0, otherFixed: 0, otherVariable: 0 },
       assets: { savings: 0, securities: 0, nisa: 0, ideco: 0, cash: 0, other: 0 },
       debt: { mortgageLoan: 10000000, mortgageMonthly: 100000, carLoan: 0, studentLoan: 0, otherDebt: 0 },
-      investment: { monthlyInvestment: 0, expectedReturn: 0, nisaMonthly: 0, idecoMonthly: 0 },
+      investment: { monthlyInvestment: 0, expectedReturn: 0, nisaMonthly: 0, idecoMonthly: 0, salaryGrowthRate: 0, inflationRate: 0, pensionMonthly: 0, pensionStartAge: 65 },
     };
     const results = runSimulation(plan, 3);
     // mortgageMonthly * 12 = 1200000/year
@@ -109,7 +109,7 @@ describe('runSimulation', () => {
       expense: { housing: 0, food: 0, utilities: 0, communication: 0, insurance: 0, car: 0, dailyGoods: 0, entertainment: 0, travel: 0, otherFixed: 0, otherVariable: 0 },
       assets: { savings: 0, securities: 0, nisa: 0, ideco: 0, cash: 0, other: 0 },
       debt: { mortgageLoan: 500000, mortgageMonthly: 100000, carLoan: 0, studentLoan: 0, otherDebt: 0 },
-      investment: { monthlyInvestment: 0, expectedReturn: 0, nisaMonthly: 0, idecoMonthly: 0 },
+      investment: { monthlyInvestment: 0, expectedReturn: 0, nisaMonthly: 0, idecoMonthly: 0, salaryGrowthRate: 0, inflationRate: 0, pensionMonthly: 0, pensionStartAge: 65 },
     };
     const results = runSimulation(plan, 3);
     expect(results[0].totalDebt).toBe(0);
@@ -123,7 +123,7 @@ describe('runSimulation', () => {
       expense: { housing: 0, food: 0, utilities: 0, communication: 0, insurance: 0, car: 0, dailyGoods: 0, entertainment: 0, travel: 0, otherFixed: 0, otherVariable: 0 },
       assets: { savings: 1000000, securities: 0, nisa: 0, ideco: 0, cash: 0, other: 0 },
       debt: { mortgageLoan: 0, mortgageMonthly: 0, carLoan: 0, studentLoan: 0, otherDebt: 0 },
-      investment: { monthlyInvestment: 0, expectedReturn: 0, nisaMonthly: 0, idecoMonthly: 0 },
+      investment: { monthlyInvestment: 0, expectedReturn: 0, nisaMonthly: 0, idecoMonthly: 0, salaryGrowthRate: 0, inflationRate: 0, pensionMonthly: 0, pensionStartAge: 65 },
     };
     const results = runSimulation(plan, 5);
     expect(results.length).toBe(5);

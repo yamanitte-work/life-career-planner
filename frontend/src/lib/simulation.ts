@@ -39,10 +39,10 @@ export function runSimulation(plan: LifePlan, years: number = 30): SimulationYea
   const annualDebtRepayment = plan.debt.mortgageMonthly * 12;
   const annualInvestment = plan.investment.monthlyInvestment * 12;
   const returnRate = plan.investment.expectedReturn / 100;
-  const salaryGrowthRate = (plan.investment.salaryGrowthRate ?? 0) / 100;
-  const inflationRate = (plan.investment.inflationRate ?? 0) / 100;
-  const pensionMonthly = plan.investment.pensionMonthly ?? 0;
-  const pensionStartAge = plan.investment.pensionStartAge ?? 65;
+  const salaryGrowthRate = plan.investment.salaryGrowthRate / 100;
+  const inflationRate = plan.investment.inflationRate / 100;
+  const pensionMonthly = plan.investment.pensionMonthly;
+  const pensionStartAge = plan.investment.pensionStartAge;
 
   let currentSavings = initialSavings;
   let currentInvestments = initialInvestments;
