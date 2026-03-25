@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from app.models.schemas import LifePlanSchema, LifeEventSchema
 from app.services.simulation import run_simulation
 
 
@@ -359,3 +360,19 @@ class TestLifeEvents:
         result = run_simulation(plan, years=3)
         assert len(result) == 3
         assert result[0]["age"] == 30
+
+    def test_life_event_schema_model_dump_produces_string_enums(self):
+        """Regression: model_dump() must emit string values for enums, not Enum instances."""
+        event = LifeEventSchema(category="career", person="self")
+        dumped = event.model_dump()
+        assert isinstance(dumped["category"], str)
+        assert dumped["category"] == "career"
+        assert isinstance(dumped["person"], str)
+        assert dumped["person"] == "self"
+
+    def test_life_plan_schema_round_trip_simulation(self):
+        """Ensure LifePlanSchema.model_dump() output works directly with run_simulation."""
+        schema = LifePlanSchema()
+        plan_dict = schema.model_dump()
+        result = run_simulation(plan_dict, years=3)
+        assert len(result) == 3

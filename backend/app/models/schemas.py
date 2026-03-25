@@ -103,6 +103,8 @@ class PersonTargetEnum(str, Enum):
 
 
 class LifeEventSchema(BaseModel):
+    model_config = {"use_enum_values": True}
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str = ""
     category: LifeEventCategoryEnum = LifeEventCategoryEnum.other
