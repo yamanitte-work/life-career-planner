@@ -1,13 +1,14 @@
 from datetime import datetime
 
+from app.models.schemas import LifePlanSchema, LifeEventSchema
 from app.services.simulation import run_simulation
 
 
 def _base_plan():
     return {
         "household": {
-            "self": {"age": 30},
-            "spouse": {"age": 28},
+            "self": {"age": 30, "name": "テスト"},
+            "spouse": {"age": 28, "name": "配偶者"},
         },
         "income": {
             "selfAnnualIncome": 5000000,
@@ -51,6 +52,7 @@ def _base_plan():
             "nisaMonthly": 30000,
             "idecoMonthly": 23000,
         },
+        "lifeEvents": [],
     }
 
 
@@ -168,3 +170,209 @@ class TestRunSimulation:
         for row in result:
             assert row["totalAssets"] == 1000000
             assert row["annualSavings"] == 0
+
+    def test_empty_events_when_no_life_events(self):
+        result = run_simulation(_base_plan(), years=3)
+        for r in result:
+            assert r["events"] == []
+
+
+class TestLifeEvents:
+    def test_one_time_cost_applied_in_correct_year(self):
+        plan = _base_plan()
+        plan["lifeEvents"] = [
+            {
+                "id": "t1",
+                "name": "住宅購入",
+                "category": "housing",
+                "yearOffset": 2,
+                "person": "household",
+                "oneTimeCost": 5000000,
+                "annualCostChange": 0,
+                "annualIncomeChange": 0,
+                "durationYears": 1,
+                "memo": "",
+            }
+        ]
+        with_events = run_simulation(plan, years=5)
+        plan_no_events = _base_plan()
+        without_events = run_simulation(plan_no_events, years=5)
+
+        assert with_events[0]["annualExpense"] == without_events[0]["annualExpense"]
+        assert with_events[1]["annualExpense"] == without_events[1]["annualExpense"]
+        assert with_events[2]["annualExpense"] == without_events[2]["annualExpense"] + 5000000
+        assert with_events[3]["annualExpense"] == without_events[3]["annualExpense"]
+
+    def test_ongoing_cost_changes_for_duration(self):
+        plan = _base_plan()
+        plan["lifeEvents"] = [
+            {
+                "id": "t2",
+                "name": "保育園",
+                "category": "childcare",
+                "yearOffset": 1,
+                "person": "household",
+                "oneTimeCost": 0,
+                "annualCostChange": 600000,
+                "annualIncomeChange": 0,
+                "durationYears": 3,
+                "memo": "",
+            }
+        ]
+        with_events = run_simulation(plan, years=6)
+        without_events = run_simulation(_base_plan(), years=6)
+
+        assert with_events[0]["annualExpense"] == without_events[0]["annualExpense"]
+        assert with_events[1]["annualExpense"] == without_events[1]["annualExpense"] + 600000
+        assert with_events[2]["annualExpense"] == without_events[2]["annualExpense"] + 600000
+        assert with_events[3]["annualExpense"] == without_events[3]["annualExpense"] + 600000
+        assert with_events[4]["annualExpense"] == without_events[4]["annualExpense"]
+
+    def test_permanent_income_changes_with_duration_zero(self):
+        plan = _base_plan()
+        plan["lifeEvents"] = [
+            {
+                "id": "t3",
+                "name": "転職",
+                "category": "career",
+                "yearOffset": 3,
+                "person": "self",
+                "oneTimeCost": 0,
+                "annualCostChange": 0,
+                "annualIncomeChange": 1000000,
+                "durationYears": 0,  # permanent
+                "memo": "",
+            }
+        ]
+        result = run_simulation(plan, years=6)
+        base = run_simulation(_base_plan(), years=6)
+
+        assert result[0]["annualIncome"] == base[0]["annualIncome"]
+        assert result[2]["annualIncome"] == base[2]["annualIncome"]
+        # Permanent from year 3 onward
+        assert result[3]["annualIncome"] == base[3]["annualIncome"] + 1000000
+        assert result[4]["annualIncome"] == base[4]["annualIncome"] + 1000000
+        assert result[5]["annualIncome"] == base[5]["annualIncome"] + 1000000
+
+    def test_event_names_recorded_in_correct_year(self):
+        plan = _base_plan()
+        plan["lifeEvents"] = [
+            {
+                "id": "t4",
+                "name": "出産",
+                "category": "childbirth",
+                "yearOffset": 1,
+                "person": "household",
+                "oneTimeCost": 500000,
+                "annualCostChange": 360000,
+                "annualIncomeChange": 0,
+                "durationYears": 3,
+                "memo": "",
+            }
+        ]
+        result = run_simulation(plan, years=5)
+        assert result[0]["events"] == []
+        assert result[1]["events"] == ["出産"]
+        assert result[2]["events"] == []
+
+    def test_event_at_year_offset_zero(self):
+        plan = _base_plan()
+        plan["lifeEvents"] = [
+            {
+                "id": "y0",
+                "name": "即時イベント",
+                "category": "other",
+                "yearOffset": 0,
+                "person": "household",
+                "oneTimeCost": 1000000,
+                "annualCostChange": 0,
+                "annualIncomeChange": 0,
+                "durationYears": 1,
+                "memo": "",
+            }
+        ]
+        result = run_simulation(plan, years=3)
+        base = run_simulation(_base_plan(), years=3)
+        assert result[0]["annualExpense"] == base[0]["annualExpense"] + 1000000
+        assert result[0]["events"] == ["即時イベント"]
+        assert result[1]["annualExpense"] == base[1]["annualExpense"]
+
+    def test_negative_income_change_retirement(self):
+        plan = _base_plan()
+        plan["lifeEvents"] = [
+            {
+                "id": "ret",
+                "name": "退職",
+                "category": "retirement",
+                "yearOffset": 2,
+                "person": "self",
+                "oneTimeCost": 0,
+                "annualCostChange": 0,
+                "annualIncomeChange": -3000000,
+                "durationYears": 0,  # permanent
+                "memo": "",
+            }
+        ]
+        result = run_simulation(plan, years=5)
+        base = run_simulation(_base_plan(), years=5)
+        assert result[2]["annualIncome"] == base[2]["annualIncome"] - 3000000
+        assert result[4]["annualIncome"] == base[4]["annualIncome"] - 3000000
+
+    def test_multiple_events_same_year(self):
+        plan = _base_plan()
+        plan["lifeEvents"] = [
+            {
+                "id": "a",
+                "name": "転職",
+                "category": "career",
+                "yearOffset": 2,
+                "person": "self",
+                "oneTimeCost": 0,
+                "annualCostChange": 0,
+                "annualIncomeChange": 500000,
+                "durationYears": 0,
+                "memo": "",
+            },
+            {
+                "id": "b",
+                "name": "出産",
+                "category": "childbirth",
+                "yearOffset": 2,
+                "person": "household",
+                "oneTimeCost": 500000,
+                "annualCostChange": 300000,
+                "annualIncomeChange": 0,
+                "durationYears": 3,
+                "memo": "",
+            },
+        ]
+        result = run_simulation(plan, years=5)
+        assert "転職" in result[2]["events"]
+        assert "出産" in result[2]["events"]
+        assert len(result[2]["events"]) == 2
+
+    def test_self_underscore_alias_handled(self):
+        """Regression: Pydantic model_dump() produces 'self_' key; simulation must handle both."""
+        plan = _base_plan()
+        # Replace "self" key with "self_" (as Pydantic would produce)
+        self_data = plan["household"].pop("self")
+        plan["household"]["self_"] = self_data
+        result = run_simulation(plan, years=3)
+        assert len(result) == 3
+        assert result[0]["age"] == 30
+
+    def test_life_event_schema_model_dump_produces_string_enums(self):
+        """Regression: model_dump() must emit string values for enums, not Enum instances."""
+        event = LifeEventSchema(category="career", person="self")
+        dumped = event.model_dump()
+        assert isinstance(dumped["category"], str)
+        assert dumped["category"] == "career"
+        assert isinstance(dumped["person"], str)
+        assert dumped["person"] == "self"
+
+    def test_life_plan_schema_round_trip_simulation(self):
+        """Ensure LifePlanSchema.model_dump() output works directly with run_simulation."""
+        schema = LifePlanSchema()
+        plan_dict = schema.model_dump()
+        result = run_simulation(plan_dict, years=3)
+        assert len(result) == 3

@@ -1,7 +1,8 @@
 from sqlalchemy import Column, String, JSON
 from sqlalchemy.orm import DeclarativeBase
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, Field
+
+from enum import Enum
 import uuid
 
 
@@ -27,11 +28,13 @@ class PersonSchema(BaseModel):
 
 
 class HouseholdSchema(BaseModel):
-    self_: PersonSchema
-    spouse: PersonSchema
+    self_: PersonSchema = Field(alias="self", default_factory=PersonSchema)
+    spouse: PersonSchema = Field(default_factory=PersonSchema)
     residenceArea: str = "東京都"
     familyComposition: str = "夫婦のみ"
     hasChildren: bool = False
+
+    model_config = {"populate_by_name": True}
 
 
 class IncomeSchema(BaseModel):
@@ -81,13 +84,47 @@ class InvestmentSchema(BaseModel):
     idecoMonthly: float = 0
 
 
+class LifeEventCategoryEnum(str, Enum):
+    marriage = "marriage"
+    childbirth = "childbirth"
+    childcare = "childcare"
+    education = "education"
+    housing = "housing"
+    car = "car"
+    career = "career"
+    retirement = "retirement"
+    other = "other"
+
+
+class PersonTargetEnum(str, Enum):
+    self_ = "self"
+    spouse = "spouse"
+    household = "household"
+
+
+class LifeEventSchema(BaseModel):
+    model_config = {"use_enum_values": True}
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str = ""
+    category: LifeEventCategoryEnum = LifeEventCategoryEnum.other
+    yearOffset: int = Field(default=1, ge=0)
+    person: PersonTargetEnum = PersonTargetEnum.household
+    oneTimeCost: float = Field(default=0, ge=0)
+    annualCostChange: float = 0
+    annualIncomeChange: float = 0
+    durationYears: int = Field(default=0, ge=0)
+    memo: str = ""
+
+
 class LifePlanSchema(BaseModel):
-    household: dict
-    income: IncomeSchema
-    expense: ExpenseSchema
-    assets: AssetSchema
-    debt: DebtSchema
-    investment: InvestmentSchema
+    household: HouseholdSchema = Field(default_factory=HouseholdSchema)
+    income: IncomeSchema = Field(default_factory=IncomeSchema)
+    expense: ExpenseSchema = Field(default_factory=ExpenseSchema)
+    assets: AssetSchema = Field(default_factory=AssetSchema)
+    debt: DebtSchema = Field(default_factory=DebtSchema)
+    investment: InvestmentSchema = Field(default_factory=InvestmentSchema)
+    lifeEvents: list[LifeEventSchema] = Field(default_factory=list)
 
 
 class SimulationRequest(BaseModel):

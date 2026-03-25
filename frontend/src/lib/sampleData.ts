@@ -66,4 +66,5 @@ export const sampleLifePlan: LifePlan = {
     nisaMonthly: 33333,
     idecoMonthly: 23000,
   },
+  lifeEvents: [],
 };
