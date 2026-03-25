@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { usePlan } from '../../context/PlanContext';
 import { LifeEvent, LifeEventCategory } from '../../lib/types';
+import { generateId } from '../../lib/id';
 import NumericInput from './NumericInput';
 
 const CATEGORY_OPTIONS: { value: LifeEventCategory; label: string; icon: string }[] = [
@@ -31,10 +32,6 @@ const EVENT_TEMPLATES: Record<string, Partial<LifeEvent>> = {
   marriage: { name: '結婚', oneTimeCost: 3000000, annualCostChange: 0, durationYears: 0, person: 'household' },
   education: { name: '大学進学', oneTimeCost: 500000, annualCostChange: 1200000, durationYears: 4, person: 'household' },
 };
-
-function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-}
 
 function createEmptyEvent(): LifeEvent {
   return {

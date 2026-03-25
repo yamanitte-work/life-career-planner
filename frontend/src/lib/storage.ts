@@ -1,4 +1,4 @@
-import { LifePlan } from './types';
+import { LifePlan, Scenario } from './types';
 
 const STORAGE_KEY = 'life_career_plan';
 
@@ -94,6 +94,58 @@ function deepMerge<T extends Record<string, any>>(defaults: T, stored: any): T {
     }
   }
   return result;
+}
+
+export const SCENARIOS_KEY = 'life_career_scenarios';
+
+function writeScenariosToStorage(scenarios: Scenario[]): void {
+  try {
+    localStorage.setItem(SCENARIOS_KEY, JSON.stringify(scenarios));
+  } catch (error) {
+    // Fail gracefully if localStorage is unavailable or quota is exceeded
+    // eslint-disable-next-line no-console
+    console.error('Failed to save scenarios to localStorage:', error);
+  }
+}
+
+export function saveScenario(scenario: Scenario): void {
+  if (typeof window === 'undefined') return;
+  const scenarios = loadScenarios();
+  const existingIndex = scenarios.findIndex((s) => s.id === scenario.id);
+  if (existingIndex >= 0) {
+    scenarios[existingIndex] = scenario;
+  } else {
+    scenarios.push(scenario);
+  }
+  writeScenariosToStorage(scenarios);
+}
+
+export function loadScenarios(): Scenario[] {
+  if (typeof window === 'undefined') return [];
+  const stored = localStorage.getItem(SCENARIOS_KEY);
+  if (!stored) return [];
+  try {
+    const parsed = JSON.parse(stored);
+    if (!Array.isArray(parsed)) return [];
+    const scenarios: Scenario[] = [];
+    for (const item of parsed) {
+      if (!item || typeof item !== 'object') continue;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { id, name, createdAt, plan } = item as any;
+      if (typeof id !== 'string' || typeof name !== 'string' || typeof createdAt !== 'number') continue;
+      const mergedPlan = deepMerge(defaultLifePlan, typeof plan === 'object' && plan !== null ? plan : {});
+      scenarios.push({ id, name, createdAt, plan: mergedPlan });
+    }
+    return scenarios;
+  } catch {
+    return [];
+  }
+}
+
+export function deleteScenario(id: string): void {
+  if (typeof window === 'undefined') return;
+  const scenarios = loadScenarios().filter((s) => s.id !== id);
+  writeScenariosToStorage(scenarios);
 }
 
 export function loadPlan(): LifePlan {

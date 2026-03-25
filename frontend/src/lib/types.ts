@@ -97,6 +97,13 @@ export interface LifePlan {
   lifeEvents: LifeEvent[];
 }
 
+export interface Scenario {
+  id: string;
+  name: string;
+  createdAt: number;
+  plan: LifePlan;
+}
+
 export interface SimulationYearData {
   year: number;
   age: number;
