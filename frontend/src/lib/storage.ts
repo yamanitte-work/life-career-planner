@@ -1,4 +1,4 @@
-import { LifePlan } from './types';
+import { LifePlan, Scenario } from './types';
 
 const STORAGE_KEY = 'life_career_plan';
 
@@ -94,6 +94,39 @@ function deepMerge<T extends Record<string, any>>(defaults: T, stored: any): T {
     }
   }
   return result;
+}
+
+const SCENARIOS_KEY = 'life_career_scenarios';
+
+export function saveScenario(scenario: Scenario): void {
+  if (typeof window === 'undefined') return;
+  const scenarios = loadScenarios();
+  const existingIndex = scenarios.findIndex((s) => s.id === scenario.id);
+  if (existingIndex >= 0) {
+    scenarios[existingIndex] = scenario;
+  } else {
+    scenarios.push(scenario);
+  }
+  localStorage.setItem(SCENARIOS_KEY, JSON.stringify(scenarios));
+}
+
+export function loadScenarios(): Scenario[] {
+  if (typeof window === 'undefined') return [];
+  const stored = localStorage.getItem(SCENARIOS_KEY);
+  if (!stored) return [];
+  try {
+    const parsed = JSON.parse(stored);
+    if (!Array.isArray(parsed)) return [];
+    return parsed as Scenario[];
+  } catch {
+    return [];
+  }
+}
+
+export function deleteScenario(id: string): void {
+  if (typeof window === 'undefined') return;
+  const scenarios = loadScenarios().filter((s) => s.id !== id);
+  localStorage.setItem(SCENARIOS_KEY, JSON.stringify(scenarios));
 }
 
 export function loadPlan(): LifePlan {

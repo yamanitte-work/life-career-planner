@@ -1,11 +1,14 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { usePlan } from '../../context/PlanContext';
 import { runSimulation, formatMan } from '../../lib/simulation';
+import { loadScenarios } from '../../lib/storage';
 import SummaryCards from '../../components/dashboard/SummaryCards';
 import FinancialAdvice from '../../components/dashboard/FinancialAdvice';
 import AssetProjectionChart from '../../components/charts/AssetProjectionChart';
 import CashflowChart from '../../components/charts/CashflowChart';
+import ScenarioComparisonChart from '../../components/charts/ScenarioComparisonChart';
+import ScenarioPanel from '../../components/scenarios/ScenarioPanel';
 import Link from 'next/link';
 
 const YEAR_OPTIONS = [5, 10, 20, 30];
@@ -13,9 +16,22 @@ const YEAR_OPTIONS = [5, 10, 20, 30];
 export default function DashboardPage() {
   const { plan } = usePlan();
   const [selectedYears, setSelectedYears] = useState(30);
+  const [compareScenarioId, setCompareScenarioId] = useState<string | null>(null);
 
-  const simulationData = runSimulation(plan, 30);
+  const simulationData = useMemo(() => runSimulation(plan, 30), [plan]);
   const currentData = simulationData[0];
+
+  const compareScenario = useMemo(
+    () =>
+      compareScenarioId
+        ? loadScenarios().find((s) => s.id === compareScenarioId) ?? null
+        : null,
+    [compareScenarioId]
+  );
+  const compareData = useMemo(
+    () => (compareScenario ? runSimulation(compareScenario.plan, 30) : null),
+    [compareScenario]
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -39,6 +55,28 @@ export default function DashboardPage() {
         <div className="mb-8">
           <FinancialAdvice plan={plan} />
         </div>
+
+        {/* Scenario Manager */}
+        <ScenarioPanel
+          compareScenarioId={compareScenarioId}
+          onCompareChange={setCompareScenarioId}
+        />
+
+        {/* Scenario Comparison Section */}
+        {compareData && compareScenario && (
+          <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
+            <h2 className="text-lg font-bold text-gray-700 mb-4">
+              🔀 シナリオ比較: 現在のプラン vs {compareScenario.name}
+            </h2>
+            <ScenarioComparisonChart
+              data1={simulationData}
+              label1="現在のプラン"
+              data2={compareData}
+              label2={compareScenario.name}
+              years={selectedYears}
+            />
+          </div>
+        )}
 
         {/* Year selector */}
         <div className="flex gap-2 mb-4">
