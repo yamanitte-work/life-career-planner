@@ -23,6 +23,7 @@ export const sampleLifePlan: LifePlan = {
     residenceArea: '東京都',
     familyComposition: '夫婦のみ',
     hasChildren: false,
+    children: [],
   },
   income: {
     selfAnnualIncome: 6000000,
@@ -56,6 +57,8 @@ export const sampleLifePlan: LifePlan = {
   debt: {
     mortgageLoan: 0,
     mortgageMonthly: 0,
+    mortgageInterestRate: 0,
+    mortgageLoanTermYears: 0,
     carLoan: 0,
     studentLoan: 1000000,
     otherDebt: 0,
@@ -69,6 +72,7 @@ export const sampleLifePlan: LifePlan = {
     inflationRate: 1,
     pensionMonthly: 150000,
     pensionStartAge: 65,
+    enableTaxCalculation: false,
   },
   lifeEvents: [],
 };

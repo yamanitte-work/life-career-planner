@@ -14,6 +14,34 @@ export default function InvestmentForm() {
 
   return (
     <div className="space-y-6">
+      {/* 税金・社会保険料の自動計算 */}
+      <div className="bg-blue-50 rounded-xl p-4">
+        <div className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            id="enableTax"
+            checked={investment.enableTaxCalculation}
+            onChange={(e) => updatePlan({ investment: { ...investment, enableTaxCalculation: e.target.checked } })}
+            className="w-5 h-5 mt-0.5 accent-blue-600"
+          />
+          <div>
+            <label htmlFor="enableTax" className="font-semibold text-blue-800 cursor-pointer">
+              🏛️ 税金・社会保険料を自動計算する（簡易）
+            </label>
+            <p className="text-xs text-gray-600 mt-1">
+              所得税・住民税・社会保険料（健康保険・厚生年金・雇用保険）を年収から自動推計し、
+              手取り額をシミュレーションに反映します。
+            </p>
+            {investment.enableTaxCalculation && (
+              <div className="mt-2 bg-blue-100 rounded-lg p-2 text-xs text-blue-800">
+                ⚠️ 給与所得控除・基礎控除・配偶者控除を適用した簡易計算です。
+                副業所得・各種控除（医療費・住宅ローン等）は含まれません。
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="bg-indigo-50 rounded-xl p-4">
         <h3 className="font-semibold text-indigo-800 mb-4">📈 投資積立設定</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
