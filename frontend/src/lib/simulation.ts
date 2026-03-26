@@ -1,4 +1,104 @@
-import { LifePlan, SimulationYearData } from './types';
+import { ChildInfo, LifePlan, SimulationYearData } from './types';
+
+// ─── 税金・社会保険料計算 ──────────────────────────────────────────────────────
+
+/** 給与所得控除（令和6年度） */
+function calcEmploymentIncomeDeduction(salary: number): number {
+  if (salary <= 1625000) return 550000;
+  if (salary <= 1800000) return Math.floor(salary * 0.4 - 100000);
+  if (salary <= 3600000) return Math.floor(salary * 0.3 + 80000);
+  if (salary <= 6600000) return Math.floor(salary * 0.2 + 440000);
+  if (salary <= 8500000) return Math.floor(salary * 0.1 + 1100000);
+  return 1950000;
+}
+
+/** 所得税（復興特別所得税 2.1% 込み） */
+function calcIncomeTax(taxableIncome: number): number {
+  if (taxableIncome <= 0) return 0;
+  let tax: number;
+  if (taxableIncome <= 1950000) tax = taxableIncome * 0.05;
+  else if (taxableIncome <= 3300000) tax = taxableIncome * 0.10 - 97500;
+  else if (taxableIncome <= 6950000) tax = taxableIncome * 0.20 - 427500;
+  else if (taxableIncome <= 9000000) tax = taxableIncome * 0.23 - 636000;
+  else if (taxableIncome <= 18000000) tax = taxableIncome * 0.33 - 1536000;
+  else if (taxableIncome <= 40000000) tax = taxableIncome * 0.40 - 2796000;
+  else tax = taxableIncome * 0.45 - 4796000;
+  return Math.floor(Math.max(0, tax) * 1.021);
+}
+
+/**
+ * 一人分の年間税・社会保険料合計（簡易計算）
+ * - 社会保険料: 健康保険 5% + 厚生年金 9.15% + 雇用保険 0.6% ≈ 14.75%
+ * - 配偶者控除: applySpouseDeduction=true の場合 38 万控除
+ *   （103万以下の配偶者がいる側のみ適用。二重適用防止のため runSimulation 側で制御）
+ * - 基礎控除: 48 万円
+ */
+export function calculatePersonAnnualTax(salary: number, applySpouseDeduction: boolean): number {
+  if (salary <= 0) return 0;
+  const socialInsurance = Math.floor(salary * 0.1475);
+  const employmentDeduction = calcEmploymentIncomeDeduction(salary);
+  const employmentIncome = Math.max(0, salary - employmentDeduction);
+  const spouseDeduction = applySpouseDeduction ? 380000 : 0;
+  const taxableIncome = Math.max(0, employmentIncome - socialInsurance - 480000 - spouseDeduction);
+  const incomeTax = calcIncomeTax(taxableIncome);
+  const residentTax = Math.max(0, Math.floor(taxableIncome * 0.10) + 5000);
+  return socialInsurance + incomeTax + residentTax;
+}
+
+// ─── 住宅ローン計算 ──────────────────────────────────────────────────────────
+
+/**
+ * 元利均等返済の月返済額
+ * @param principal 残高（円）
+ * @param annualRatePercent 年利（%）
+ * @param termYears 残存期間（年）
+ */
+export function calculateMortgageMonthly(
+  principal: number,
+  annualRatePercent: number,
+  termYears: number,
+): number {
+  if (principal <= 0 || termYears <= 0) return 0;
+  if (annualRatePercent <= 0) {
+    // 無利子: 元金を均等分割
+    return Math.ceil(principal / (termYears * 12));
+  }
+  const r = annualRatePercent / 100 / 12;
+  const n = termYears * 12;
+  return Math.ceil((principal * r) / (1 - Math.pow(1 + r, -n)));
+}
+
+// ─── 教育費計算 ──────────────────────────────────────────────────────────────
+
+/** 文科省「子供の学習費調査」参考の年間費用（概算） */
+const EDUCATION_COSTS = {
+  kindergarten: { public: 161000, private: 308000 }, // 3〜5歳
+  elementary:   { public: 353000, private: 1667000 }, // 6〜11歳
+  juniorHigh:   { public: 538000, private: 1436000 }, // 12〜14歳
+  highSchool:   { public: 513000, private: 1054000 }, // 15〜17歳
+  university: {
+    none: 0,
+    national: 547000,       // 国公立大学
+    private_arts: 930000,   // 私立文系
+    private_science: 1200000, // 私立理系
+  },
+} as const;
+
+const UNIVERSITY_AWAY_COST = 1000000; // 自宅外通学の追加費用（仕送り等）
+
+function calcChildEducationCost(child: ChildInfo, childAge: number): number {
+  if (childAge < 3 || childAge > 21) return 0;
+  if (childAge <= 5)  return EDUCATION_COSTS.kindergarten[child.kindergartenType];
+  if (childAge <= 11) return EDUCATION_COSTS.elementary[child.elementaryType];
+  if (childAge <= 14) return EDUCATION_COSTS.juniorHigh[child.juniorHighType];
+  if (childAge <= 17) return EDUCATION_COSTS.highSchool[child.highSchoolType];
+  // 18〜21: 大学
+  const base = EDUCATION_COSTS.university[child.universityType];
+  const awayCost = child.universityType !== 'none' && child.livesAwayForUniversity ? UNIVERSITY_AWAY_COST : 0;
+  return base + awayCost;
+}
+
+// ─── メインシミュレーション ─────────────────────────────────────────────────
 
 export function runSimulation(plan: LifePlan, years: number = 30): SimulationYearData[] {
   const results: SimulationYearData[] = [];
@@ -30,25 +130,29 @@ export function runSimulation(plan: LifePlan, years: number = 30): SimulationYea
     plan.assets.savings + plan.assets.cash + plan.assets.other;
   const initialInvestments =
     plan.assets.securities + plan.assets.nisa + plan.assets.ideco;
-  const initialDebt =
-    plan.debt.mortgageLoan +
-    plan.debt.carLoan +
-    plan.debt.studentLoan +
-    plan.debt.otherDebt;
+  // 住宅ローン月返済額: 詳細パラメータが揃っていれば自動計算、なければ手動値を使用
+  const mortgageMonthly =
+    plan.debt.mortgageLoan > 0 && plan.debt.mortgageLoanTermYears > 0
+      ? calculateMortgageMonthly(plan.debt.mortgageLoan, plan.debt.mortgageInterestRate, plan.debt.mortgageLoanTermYears)
+      : plan.debt.mortgageMonthly;
 
-  const annualDebtRepayment = plan.debt.mortgageMonthly * 12;
+  const annualDebtRepayment = mortgageMonthly * 12;
   const annualInvestment = plan.investment.monthlyInvestment * 12;
   const returnRate = plan.investment.expectedReturn / 100;
   const salaryGrowthRate = plan.investment.salaryGrowthRate / 100;
   const inflationRate = plan.investment.inflationRate / 100;
   const pensionMonthly = plan.investment.pensionMonthly;
   const pensionStartAge = plan.investment.pensionStartAge;
+  const enableTax = plan.investment.enableTaxCalculation;
 
+  // 住宅ローン残高は他の借入と分離して管理（利息計算を住宅ローン部分のみに適用するため）
+  const nonMortgageDebt = plan.debt.carLoan + plan.debt.studentLoan + plan.debt.otherDebt;
   let currentSavings = initialSavings;
   let currentInvestments = initialInvestments;
-  let currentDebt = Math.max(0, initialDebt);
+  let currentMortgageDebt = Math.max(0, plan.debt.mortgageLoan);
 
   const lifeEvents = plan.lifeEvents;
+  const children = plan.household.children ?? [];
 
   const maxYears = Math.min(years, 100 - selfAge);
 
@@ -64,7 +168,6 @@ export function runSimulation(plan: LifePlan, years: number = 30): SimulationYea
 
     for (const event of lifeEvents) {
       const eventStartYear = event.yearOffset;
-      // durationYears: 0 means permanent (ongoing until end of simulation)
       const eventEndYear = event.durationYears > 0
         ? event.yearOffset + event.durationYears - 1
         : maxYears;
@@ -83,25 +186,71 @@ export function runSimulation(plan: LifePlan, years: number = 30): SimulationYea
       }
     }
 
-    // Phase 5: apply salary growth and inflation cumulatively
+    // 昇給率・物価上昇率
     const growthFactor = Math.pow(1 + salaryGrowthRate, y);
     const inflationFactor = Math.pow(1 + inflationRate, y);
     const pensionIncome = age >= pensionStartAge ? pensionMonthly * 12 : 0;
 
     const annualIncome = baseAnnualIncome * growthFactor + eventAnnualIncomeChange + pensionIncome;
-    const annualExpense = baseAnnualExpense * inflationFactor + eventAnnualCostChange + eventOneTimeCost;
+
+    // 税金・社会保険料の計算（簡易）
+    // 副業・その他収入は本人側に合算して計算。
+    // ライフイベントによる収入変化・年金収入は簡易計算のため除外。
+    let annualTax = 0;
+    if (enableTax) {
+      const selfSalary =
+        (plan.income.selfAnnualIncome + plan.income.selfBonus + plan.income.sideJobIncome + plan.income.otherIncome) *
+        growthFactor;
+      const spouseSalary = (plan.income.spouseAnnualIncome + plan.income.spouseBonus) * growthFactor;
+      // 配偶者控除は所得の高い方のみ適用（双方が控除を取る二重適用を防ぐ）
+      const selfApplySpouseDeduction = selfSalary >= spouseSalary && spouseSalary <= 1030000;
+      const spouseApplySpouseDeduction = spouseSalary > selfSalary && selfSalary <= 1030000;
+      annualTax =
+        calculatePersonAnnualTax(selfSalary, selfApplySpouseDeduction) +
+        calculatePersonAnnualTax(spouseSalary, spouseApplySpouseDeduction);
+    }
+
+    // 教育費の計算
+    let annualEducationExpense = 0;
+    for (const child of children) {
+      const childAge = y - child.birthYearOffset;
+      annualEducationExpense += calcChildEducationCost(child, childAge);
+    }
+
+    const annualExpense =
+      baseAnnualExpense * inflationFactor +
+      eventAnnualCostChange +
+      eventOneTimeCost +
+      annualEducationExpense;
 
     const investmentGrowth = currentInvestments * returnRate;
     currentInvestments = currentInvestments * (1 + returnRate) + annualInvestment;
 
-    const annualSavings = annualIncome - annualExpense - annualInvestment - annualDebtRepayment;
+    const annualSavings =
+      annualIncome - annualTax - annualExpense - annualInvestment - annualDebtRepayment;
     currentSavings = currentSavings + annualSavings;
 
-    const debtPaid = Math.min(currentDebt, annualDebtRepayment);
-    currentDebt = Math.max(0, currentDebt - debtPaid);
+    // 住宅ローン残高更新: 詳細計算モードでは月次で元利均等償却を実施（年次近似より正確）
+    if (plan.debt.mortgageLoanTermYears > 0 && currentMortgageDebt > 0) {
+      const monthlyRate = (plan.debt.mortgageInterestRate / 100) / 12;
+      const monthlyPayment = annualDebtRepayment / 12;
+      for (let m = 0; m < 12; m++) {
+        if (currentMortgageDebt <= 0) break;
+        const monthlyInterest = currentMortgageDebt * monthlyRate;
+        const principalPayment = Math.min(
+          currentMortgageDebt,
+          Math.max(0, monthlyPayment - monthlyInterest),
+        );
+        currentMortgageDebt -= principalPayment;
+      }
+    } else {
+      const debtPaid = Math.min(currentMortgageDebt, annualDebtRepayment);
+      currentMortgageDebt = Math.max(0, currentMortgageDebt - debtPaid);
+    }
+    const totalDebt = currentMortgageDebt + nonMortgageDebt;
 
     const totalAssets = Math.max(0, currentSavings) + currentInvestments;
-    const netAssets = totalAssets - currentDebt;
+    const netAssets = totalAssets - totalDebt;
 
     results.push({
       year,
@@ -112,11 +261,13 @@ export function runSimulation(plan: LifePlan, years: number = 30): SimulationYea
       annualSavings,
       investmentGrowth,
       totalAssets,
-      totalDebt: currentDebt,
+      totalDebt,
       netAssets,
       savings: Math.max(0, currentSavings),
       investments: currentInvestments,
       events: eventNames,
+      annualTax,
+      annualEducationExpense,
     });
   }
 
