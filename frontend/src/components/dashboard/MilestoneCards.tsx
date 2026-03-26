@@ -26,10 +26,12 @@ export default function MilestoneCards({ metrics }: Props) {
     },
     {
       label: '支出ピーク年',
-      value: `${metrics.peakExpenseYear.age}歳`,
-      sub: `${metrics.peakExpenseYear.year}年 / ${formatMan(metrics.peakExpenseYear.amount)}`,
-      color: 'bg-orange-50 border-orange-200',
-      textColor: 'text-orange-700',
+      value: metrics.peakExpenseYear ? `${metrics.peakExpenseYear.age}歳` : '—',
+      sub: metrics.peakExpenseYear
+        ? `${metrics.peakExpenseYear.year}年 / ${formatMan(metrics.peakExpenseYear.amount)}`
+        : null,
+      color: metrics.peakExpenseYear ? 'bg-orange-50 border-orange-200' : 'bg-gray-50 border-gray-200',
+      textColor: metrics.peakExpenseYear ? 'text-orange-700' : 'text-gray-400',
       icon: '📊',
     },
     {
@@ -37,7 +39,7 @@ export default function MilestoneCards({ metrics }: Props) {
       value: metrics.peakEducationYear ? `${metrics.peakEducationYear.age}歳` : '—',
       sub: metrics.peakEducationYear
         ? `${metrics.peakEducationYear.year}年 / ${formatMan(metrics.peakEducationYear.amount)}`
-        : '子どもの登録なし',
+        : '教育費が発生しない期間',
       color: metrics.peakEducationYear
         ? 'bg-purple-50 border-purple-200'
         : 'bg-gray-50 border-gray-200',

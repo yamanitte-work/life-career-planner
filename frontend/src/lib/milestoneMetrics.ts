@@ -2,7 +2,7 @@ import { SimulationYearData } from './types';
 
 export interface MilestoneMetrics {
   netAssetsAt60: number | null;
-  peakExpenseYear: { year: number; age: number; amount: number };
+  peakExpenseYear: { year: number; age: number; amount: number } | null;
   peakEducationYear: { year: number; age: number; amount: number } | null;
   negativeNetAssetsYear: { year: number; age: number } | null;
   lifetimeBalance: number;
@@ -15,7 +15,7 @@ export function calcMilestoneMetrics(
   if (data.length === 0) {
     return {
       netAssetsAt60: null,
-      peakExpenseYear: { year: new Date().getFullYear(), age: selfAge, amount: 0 },
+      peakExpenseYear: null,
       peakEducationYear: null,
       negativeNetAssetsYear: null,
       lifetimeBalance: 0,

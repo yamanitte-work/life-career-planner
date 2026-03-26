@@ -4,6 +4,32 @@ import { AIProposal } from '../../lib/types';
 import { parseProposals, ProposalSegment } from '../../lib/proposalParser';
 import { formatCurrency } from '../../lib/simulation';
 
+const PERCENT_PATHS = new Set([
+  'investment.expectedReturn',
+  'investment.salaryGrowthRate',
+  'investment.inflationRate',
+  'debt.mortgageInterestRate',
+]);
+
+const AGE_PATHS = new Set(['investment.pensionStartAge']);
+
+const YEAR_PATHS = new Set(['debt.mortgageLoanTermYears']);
+
+function formatChangeValue(path: string, value: number): string {
+  if (PERCENT_PATHS.has(path)) return `${value}%`;
+  if (AGE_PATHS.has(path)) return `${value}歳`;
+  if (YEAR_PATHS.has(path)) return `${value}年`;
+  return formatCurrency(value);
+}
+
+function formatDeltaValue(path: string, delta: number): string {
+  const prefix = delta >= 0 ? '+' : '';
+  if (PERCENT_PATHS.has(path)) return `${prefix}${delta}%`;
+  if (AGE_PATHS.has(path)) return `${prefix}${delta}歳`;
+  if (YEAR_PATHS.has(path)) return `${prefix}${delta}年`;
+  return `${prefix}${formatCurrency(delta)}`;
+}
+
 interface Props {
   role: 'user' | 'assistant';
   content: string;
@@ -34,10 +60,10 @@ function ProposalCard({
           <div key={i} className="flex items-center gap-2 text-xs text-gray-700 bg-white rounded px-2 py-1">
             <span className="font-medium">{change.label}</span>
             <span className="text-gray-400">→</span>
-            <span className="font-semibold text-blue-700">{formatCurrency(change.value)}</span>
+            <span className="font-semibold text-blue-700">{formatChangeValue(change.path, change.value)}</span>
             {change.delta != null && (
               <span className={`text-xs ${change.delta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ({change.delta >= 0 ? '+' : ''}{formatCurrency(change.delta)})
+                ({formatDeltaValue(change.path, change.delta)})
               </span>
             )}
           </div>

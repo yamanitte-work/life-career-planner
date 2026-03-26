@@ -34,12 +34,15 @@ export function parseProposals(content: string): ParseResult {
     // proposalブロックをパース
     try {
       const json = JSON.parse(match[1]);
-      const changes: PlanChange[] = (json.changes || []).map((c: PlanChange) => ({
-        path: String(c.path || ''),
-        value: safeNumber(c.value, 0),
-        delta: c.delta != null ? safeNumber(c.delta, 0) : undefined,
-        label: String(c.label || c.path || ''),
-      }));
+      const rawChanges = Array.isArray(json.changes) ? json.changes : [];
+      const changes: PlanChange[] = rawChanges
+        .filter((c: any) => c && c.value != null && !Number.isNaN(Number(c.value)))
+        .map((c: PlanChange) => ({
+          path: String(c.path || ''),
+          value: Number(c.value),
+          delta: c.delta != null ? safeNumber(c.delta, 0) : undefined,
+          label: String(c.label || c.path || ''),
+        }));
 
       const proposal: AIProposal = {
         id: generateId(),
