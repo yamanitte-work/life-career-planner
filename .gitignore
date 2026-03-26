@@ -11,3 +11,4 @@ dist/
 venv/
 .next/
 frontend/out/
+.claude/settings.local.json
