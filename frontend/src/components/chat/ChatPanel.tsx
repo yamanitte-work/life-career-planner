@@ -31,18 +31,25 @@ export default function ChatPanel() {
   }, []);
 
   useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingContent]);
 
   const saveCurrentSession = useCallback((msgs: ChatMessageType[]) => {
     if (msgs.length === 0) return;
+    const existing = loadChatSessions().find((s) => s.id === sessionId);
     const firstUserMsg = msgs.find((m) => m.role === 'user');
     const title = firstUserMsg?.content.slice(0, 30) || 'チャット';
     const session: ChatSession = {
       id: sessionId,
       title,
       messages: msgs,
-      createdAt: Date.now(),
+      createdAt: existing?.createdAt ?? Date.now(),
     };
     saveChatSession(session);
     setSessions(loadChatSessions());
@@ -77,7 +84,8 @@ export default function ChatPanel() {
 
     await sendMessageStream(
       config,
-      updatedMessages.filter((m) => m.role !== 'system'),
+      updatedMessages
+        .filter((m): m is ChatMessageType & { role: 'user' | 'assistant' } => m.role !== 'system'),
       systemPrompt,
       {
         onChunk: (chunk) => {

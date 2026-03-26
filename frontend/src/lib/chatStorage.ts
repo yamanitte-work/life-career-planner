@@ -4,7 +4,11 @@ const CONFIG_KEY = 'ai_chat_config';
 const SESSIONS_KEY = 'ai_chat_sessions';
 
 export function saveChatConfig(config: AIChatConfig): void {
-  localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+  try {
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+  } catch {
+    // QuotaExceededError etc. — silently fail
+  }
 }
 
 export function loadChatConfig(): AIChatConfig | null {
@@ -25,7 +29,11 @@ export function saveChatSession(session: ChatSession): void {
   } else {
     sessions.unshift(session);
   }
-  localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
+  try {
+    localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
+  } catch {
+    // QuotaExceededError etc. — silently fail
+  }
 }
 
 export function loadChatSessions(): ChatSession[] {
@@ -40,5 +48,9 @@ export function loadChatSessions(): ChatSession[] {
 
 export function deleteChatSession(id: string): void {
   const sessions = loadChatSessions().filter((s) => s.id !== id);
-  localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
+  try {
+    localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
+  } catch {
+    // QuotaExceededError etc. — silently fail
+  }
 }

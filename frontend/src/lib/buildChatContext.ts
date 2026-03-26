@@ -73,7 +73,7 @@ ${plan.investment.idecoMonthly > 0 ? `- iDeCo: 月${formatMan(plan.investment.id
 ${events || '登録なし'}
 
 ## シミュレーション結果サマリー
-- 現在（${first?.age}歳）: 純資産 ${first ? formatMan(first.netAssets) : '—'}
+- 現在（${first ? `${first.age}歳` : '—'}）: 純資産 ${first ? formatMan(first.netAssets) : '—'}
 ${year10 ? `- 10年後（${year10.age}歳）: 純資産 ${formatMan(year10.netAssets)}、年収 ${formatMan(year10.annualIncome)}` : ''}
 ${year30 ? `- 30年後（${year30.age}歳）: 純資産 ${formatMan(year30.netAssets)}、年収 ${formatMan(year30.annualIncome)}` : ''}
 

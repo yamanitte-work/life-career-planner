@@ -4,6 +4,8 @@
 // ブラウザからは自サーバーにのみリクエストする構成に移行してください。
 import { AIChatConfig, ChatMessage } from './types';
 
+type ConversationMessage = Pick<ChatMessage, 'content'> & { role: 'user' | 'assistant' };
+
 export interface StreamCallbacks {
   onChunk: (text: string) => void;
   onDone: () => void;
@@ -12,15 +14,15 @@ export interface StreamCallbacks {
 
 export async function sendMessageStream(
   config: AIChatConfig,
-  messages: ChatMessage[],
+  messages: ConversationMessage[],
   systemPrompt: string,
   callbacks: StreamCallbacks,
   signal?: AbortSignal
 ): Promise<void> {
-  const apiMessages = [
-    { role: 'system' as const, content: systemPrompt },
+  const apiMessages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
+    { role: 'system', content: systemPrompt },
     ...messages.map((m) => ({
-      role: m.role as 'user' | 'assistant',
+      role: m.role,
       content: m.content,
     })),
   ];

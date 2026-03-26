@@ -44,6 +44,7 @@ export default function ChatInput({ onSend, disabled = false }: Props) {
         onKeyDown={handleKeyDown}
         onInput={handleInput}
         placeholder="メッセージを入力...（Shift+Enterで改行）"
+        aria-label="チャットメッセージ入力"
         disabled={disabled}
         rows={1}
         className="flex-1 resize-none rounded-xl border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
