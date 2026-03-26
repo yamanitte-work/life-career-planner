@@ -93,7 +93,8 @@ function calcChildEducationCost(child: ChildInfo, childAge: number): number {
   if (childAge <= 17) return EDUCATION_COSTS.highSchool[child.highSchoolType];
   // 18〜21: 大学
   const base = EDUCATION_COSTS.university[child.universityType];
-  return base + (child.livesAwayForUniversity ? UNIVERSITY_AWAY_COST : 0);
+  const awayCost = child.universityType !== 'none' && child.livesAwayForUniversity ? UNIVERSITY_AWAY_COST : 0;
+  return base + awayCost;
 }
 
 // ─── メインシミュレーション ─────────────────────────────────────────────────
@@ -149,9 +150,11 @@ export function runSimulation(plan: LifePlan, years: number = 30): SimulationYea
   const pensionStartAge = plan.investment.pensionStartAge;
   const enableTax = plan.investment.enableTaxCalculation;
 
+  // 住宅ローン残高は他の借入と分離して管理（利息計算を住宅ローン部分のみに適用するため）
+  const nonMortgageDebt = plan.debt.carLoan + plan.debt.studentLoan + plan.debt.otherDebt;
   let currentSavings = initialSavings;
   let currentInvestments = initialInvestments;
-  let currentDebt = Math.max(0, initialDebt);
+  let currentMortgageDebt = Math.max(0, plan.debt.mortgageLoan);
 
   const lifeEvents = plan.lifeEvents;
   const children = plan.household.children ?? [];
@@ -229,18 +232,19 @@ export function runSimulation(plan: LifePlan, years: number = 30): SimulationYea
       annualIncome - annualTax - annualExpense - annualInvestment - annualDebtRepayment;
     currentSavings = currentSavings + annualSavings;
 
-    // 住宅ローン残高更新: 詳細計算モードでは元本のみ残高から減算（利息はキャッシュフロー上は支払済）
-    if (plan.debt.mortgageLoanTermYears > 0 && currentDebt > 0) {
-      const annualInterest = currentDebt * (plan.debt.mortgageInterestRate / 100);
+    // 住宅ローン残高更新: 詳細計算モードでは住宅ローン分のみに利息計算を適用し元本のみ減算
+    if (plan.debt.mortgageLoanTermYears > 0 && currentMortgageDebt > 0) {
+      const annualInterest = currentMortgageDebt * (plan.debt.mortgageInterestRate / 100);
       const annualPrincipal = Math.max(0, annualDebtRepayment - annualInterest);
-      currentDebt = Math.max(0, currentDebt - annualPrincipal);
+      currentMortgageDebt = Math.max(0, currentMortgageDebt - annualPrincipal);
     } else {
-      const debtPaid = Math.min(currentDebt, annualDebtRepayment);
-      currentDebt = Math.max(0, currentDebt - debtPaid);
+      const debtPaid = Math.min(currentMortgageDebt, annualDebtRepayment);
+      currentMortgageDebt = Math.max(0, currentMortgageDebt - debtPaid);
     }
+    const totalDebt = currentMortgageDebt + nonMortgageDebt;
 
     const totalAssets = Math.max(0, currentSavings) + currentInvestments;
-    const netAssets = totalAssets - currentDebt;
+    const netAssets = totalAssets - totalDebt;
 
     results.push({
       year,
@@ -251,7 +255,7 @@ export function runSimulation(plan: LifePlan, years: number = 30): SimulationYea
       annualSavings,
       investmentGrowth,
       totalAssets,
-      totalDebt: currentDebt,
+      totalDebt,
       netAssets,
       savings: Math.max(0, currentSavings),
       investments: currentInvestments,
