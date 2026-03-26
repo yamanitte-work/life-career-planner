@@ -1,3 +1,7 @@
+// NOTE: 現在はクライアントサイドから直接 OpenAI API を呼び出しています。
+// ユーザー自身の API キーを使用する暫定構成です。
+// 本番運用時はバックエンド（FastAPI）にプロキシエンドポイントを設け、
+// ブラウザからは自サーバーにのみリクエストする構成に移行してください。
 import { AIChatConfig, ChatMessage } from './types';
 
 export interface StreamCallbacks {

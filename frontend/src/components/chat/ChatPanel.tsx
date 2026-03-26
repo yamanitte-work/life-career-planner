@@ -18,7 +18,7 @@ export default function ChatPanel() {
   const [streamingContent, setStreamingContent] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [sessionId] = useState(() => generateId());
+  const [sessionId, setSessionId] = useState(() => generateId());
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -111,6 +111,7 @@ export default function ChatPanel() {
 
   const handleStop = () => {
     abortRef.current?.abort();
+    abortRef.current = null;
     if (streamingContent) {
       const assistantMsg: ChatMessageType = {
         id: generateId(),
@@ -127,10 +128,12 @@ export default function ChatPanel() {
   };
 
   const handleLoadSession = (session: ChatSession) => {
+    setSessionId(session.id);
     setMessages(session.messages);
   };
 
   const handleNewChat = () => {
+    setSessionId(generateId());
     setMessages([]);
     setStreamingContent('');
     setError(null);
@@ -229,9 +232,11 @@ export default function ChatPanel() {
               </div>
             )}
 
-            {messages.map((msg) => (
-              <ChatMessage key={msg.id} role={msg.role as 'user' | 'assistant'} content={msg.content} />
-            ))}
+            {messages
+              .filter((msg) => msg.role !== 'system')
+              .map((msg) => (
+                <ChatMessage key={msg.id} role={msg.role as 'user' | 'assistant'} content={msg.content} />
+              ))}
 
             {streamingContent && (
               <ChatMessage role="assistant" content={streamingContent} />
