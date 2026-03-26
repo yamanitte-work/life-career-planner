@@ -29,15 +29,16 @@ function calcIncomeTax(taxableIncome: number): number {
 /**
  * 一人分の年間税・社会保険料合計（簡易計算）
  * - 社会保険料: 健康保険 5% + 厚生年金 9.15% + 雇用保険 0.6% ≈ 14.75%
- * - 配偶者控除: 配偶者所得が 103 万以下の場合 38 万控除
+ * - 配偶者控除: applySpouseDeduction=true の場合 38 万控除
+ *   （103万以下の配偶者がいる側のみ適用。二重適用防止のため runSimulation 側で制御）
  * - 基礎控除: 48 万円
  */
-export function calculatePersonAnnualTax(salary: number, spouseIncome: number): number {
+export function calculatePersonAnnualTax(salary: number, applySpouseDeduction: boolean): number {
   if (salary <= 0) return 0;
   const socialInsurance = Math.floor(salary * 0.1475);
   const employmentDeduction = calcEmploymentIncomeDeduction(salary);
   const employmentIncome = Math.max(0, salary - employmentDeduction);
-  const spouseDeduction = spouseIncome <= 1030000 ? 380000 : 0; // 103万円以下
+  const spouseDeduction = applySpouseDeduction ? 380000 : 0;
   const taxableIncome = Math.max(0, employmentIncome - socialInsurance - 480000 - spouseDeduction);
   const incomeTax = calcIncomeTax(taxableIncome);
   const residentTax = Math.max(0, Math.floor(taxableIncome * 0.10) + 5000);
@@ -129,12 +130,6 @@ export function runSimulation(plan: LifePlan, years: number = 30): SimulationYea
     plan.assets.savings + plan.assets.cash + plan.assets.other;
   const initialInvestments =
     plan.assets.securities + plan.assets.nisa + plan.assets.ideco;
-  const initialDebt =
-    plan.debt.mortgageLoan +
-    plan.debt.carLoan +
-    plan.debt.studentLoan +
-    plan.debt.otherDebt;
-
   // 住宅ローン月返済額: 詳細パラメータが揃っていれば自動計算、なければ手動値を使用
   const mortgageMonthly =
     plan.debt.mortgageLoan > 0 && plan.debt.mortgageLoanTermYears > 0
@@ -207,9 +202,12 @@ export function runSimulation(plan: LifePlan, years: number = 30): SimulationYea
         (plan.income.selfAnnualIncome + plan.income.selfBonus + plan.income.sideJobIncome + plan.income.otherIncome) *
         growthFactor;
       const spouseSalary = (plan.income.spouseAnnualIncome + plan.income.spouseBonus) * growthFactor;
+      // 配偶者控除は所得の高い方のみ適用（双方が控除を取る二重適用を防ぐ）
+      const selfApplySpouseDeduction = selfSalary >= spouseSalary && spouseSalary <= 1030000;
+      const spouseApplySpouseDeduction = spouseSalary > selfSalary && selfSalary <= 1030000;
       annualTax =
-        calculatePersonAnnualTax(selfSalary, spouseSalary) +
-        calculatePersonAnnualTax(spouseSalary, selfSalary);
+        calculatePersonAnnualTax(selfSalary, selfApplySpouseDeduction) +
+        calculatePersonAnnualTax(spouseSalary, spouseApplySpouseDeduction);
     }
 
     // 教育費の計算
@@ -232,11 +230,19 @@ export function runSimulation(plan: LifePlan, years: number = 30): SimulationYea
       annualIncome - annualTax - annualExpense - annualInvestment - annualDebtRepayment;
     currentSavings = currentSavings + annualSavings;
 
-    // 住宅ローン残高更新: 詳細計算モードでは住宅ローン分のみに利息計算を適用し元本のみ減算
+    // 住宅ローン残高更新: 詳細計算モードでは月次で元利均等償却を実施（年次近似より正確）
     if (plan.debt.mortgageLoanTermYears > 0 && currentMortgageDebt > 0) {
-      const annualInterest = currentMortgageDebt * (plan.debt.mortgageInterestRate / 100);
-      const annualPrincipal = Math.max(0, annualDebtRepayment - annualInterest);
-      currentMortgageDebt = Math.max(0, currentMortgageDebt - annualPrincipal);
+      const monthlyRate = (plan.debt.mortgageInterestRate / 100) / 12;
+      const monthlyPayment = annualDebtRepayment / 12;
+      for (let m = 0; m < 12; m++) {
+        if (currentMortgageDebt <= 0) break;
+        const monthlyInterest = currentMortgageDebt * monthlyRate;
+        const principalPayment = Math.min(
+          currentMortgageDebt,
+          Math.max(0, monthlyPayment - monthlyInterest),
+        );
+        currentMortgageDebt -= principalPayment;
+      }
     } else {
       const debtPaid = Math.min(currentMortgageDebt, annualDebtRepayment);
       currentMortgageDebt = Math.max(0, currentMortgageDebt - debtPaid);

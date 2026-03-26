@@ -391,26 +391,26 @@ describe('formatMan', () => {
 
 describe('calculatePersonAnnualTax', () => {
   it('returns 0 for zero salary', () => {
-    expect(calculatePersonAnnualTax(0, 0)).toBe(0);
+    expect(calculatePersonAnnualTax(0, false)).toBe(0);
   });
 
   it('calculates tax for average salary (5,000,000)', () => {
-    const tax = calculatePersonAnnualTax(5000000, 0);
+    const tax = calculatePersonAnnualTax(5000000, false);
     // 社会保険料 (14.75%) ≈ 737,500
     // 手取りはざっくり 3,700,000〜3,900,000 のイメージ
     expect(tax).toBeGreaterThan(1000000); // 200万以上の控除
     expect(tax).toBeLessThan(2000000);
   });
 
-  it('spouse deduction applies when spouse income < 1,030,000', () => {
-    const taxWithSpouseDeduction = calculatePersonAnnualTax(5000000, 0);
-    const taxWithoutSpouseDeduction = calculatePersonAnnualTax(5000000, 2000000);
+  it('spouse deduction applies when applySpouseDeduction is true', () => {
+    const taxWithSpouseDeduction = calculatePersonAnnualTax(5000000, true);
+    const taxWithoutSpouseDeduction = calculatePersonAnnualTax(5000000, false);
     expect(taxWithSpouseDeduction).toBeLessThan(taxWithoutSpouseDeduction);
   });
 
   it('higher salary results in higher tax', () => {
-    const taxLow = calculatePersonAnnualTax(3000000, 0);
-    const taxHigh = calculatePersonAnnualTax(10000000, 0);
+    const taxLow = calculatePersonAnnualTax(3000000, false);
+    const taxHigh = calculatePersonAnnualTax(10000000, false);
     expect(taxHigh).toBeGreaterThan(taxLow);
   });
 });
@@ -562,9 +562,14 @@ describe('mortgage auto-calculation in simulation', () => {
     };
     const results = runSimulation(plan, 1);
     const expectedMonthly = calculateMortgageMonthly(30000000, 1.5, 35);
-    // 詳細計算モード: 元本のみ残高から減算（元本返済 = 支払額 - 利息）
-    const annualInterest = 30000000 * 0.015;
-    const annualPrincipal = expectedMonthly * 12 - annualInterest;
-    expect(results[0].totalDebt).toBe(30000000 - annualPrincipal);
+    // 詳細計算モード: 月次元利均等償却で残高を更新（シミュレーションと同じ計算）
+    const monthlyRate = 0.015 / 12;
+    let expectedDebt = 30000000;
+    for (let m = 0; m < 12; m++) {
+      const interest = expectedDebt * monthlyRate;
+      const principal = Math.min(expectedDebt, Math.max(0, expectedMonthly - interest));
+      expectedDebt -= principal;
+    }
+    expect(results[0].totalDebt).toBe(expectedDebt);
   });
 });
