@@ -5,6 +5,7 @@ export interface MilestoneMetrics {
   peakExpenseYear: { year: number; age: number; amount: number } | null;
   peakEducationYear: { year: number; age: number; amount: number } | null;
   negativeNetAssetsYear: { year: number; age: number } | null;
+  /** 入力データ配列の期間累計収支（annualSavings の合計）。30年固定シミュレーションで使用する場合は30年累計になる。 */
   lifetimeBalance: number;
 }
 
@@ -45,7 +46,7 @@ export function calcMilestoneMetrics(data: SimulationYearData[]): MilestoneMetri
   const negRow = data.find((d) => d.netAssets < 0);
   const negativeNetAssetsYear = negRow ? { year: negRow.year, age: negRow.age } : null;
 
-  // 生涯収支バランス（累計）
+  // 収支バランス（入力配列の期間累計）
   const lifetimeBalance = data.reduce((sum, d) => sum + d.annualSavings, 0);
 
   return {

@@ -154,15 +154,17 @@ export default function ChatPanel() {
   };
 
   const handleApplyProposal = useCallback((proposal: AIProposal) => {
-    const updates = applyProposalToPlan(plan, proposal);
-    if (Object.keys(updates).length > 0) {
-      updatePlan(updates);
-      setAppliedProposalIds((prev) => new Set(prev).add(proposal.id));
-      setError(null);
-    } else {
-      setError('この提案は反映できる項目がありません');
-    }
-  }, [plan, updatePlan]);
+    updatePlan((prevPlan) => {
+      const updates = applyProposalToPlan(prevPlan, proposal);
+      if (Object.keys(updates).length > 0) {
+        setAppliedProposalIds((prev) => new Set(prev).add(proposal.id));
+        setError(null);
+      } else {
+        setError('この提案は反映できる項目がありません');
+      }
+      return updates;
+    });
+  }, [updatePlan]);
 
   const hasApiKey = !!config?.apiKey;
 

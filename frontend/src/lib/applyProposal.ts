@@ -1,80 +1,6 @@
 import { AIProposal, LifePlan } from './types';
 
-/** 許可するパスのホワイトリスト */
-const ALLOWED_PATHS = new Set([
-  // income
-  'income.selfAnnualIncome',
-  'income.spouseAnnualIncome',
-  'income.selfBonus',
-  'income.spouseBonus',
-  'income.sideJobIncome',
-  'income.otherIncome',
-  // expense
-  'expense.housing',
-  'expense.food',
-  'expense.utilities',
-  'expense.communication',
-  'expense.insurance',
-  'expense.car',
-  'expense.dailyGoods',
-  'expense.entertainment',
-  'expense.travel',
-  'expense.otherFixed',
-  'expense.otherVariable',
-  // investment
-  'investment.monthlyInvestment',
-  'investment.expectedReturn',
-  'investment.nisaMonthly',
-  'investment.idecoMonthly',
-  'investment.salaryGrowthRate',
-  'investment.inflationRate',
-  'investment.pensionMonthly',
-  'investment.pensionStartAge',
-  // debt
-  'debt.mortgageLoan',
-  'debt.mortgageMonthly',
-  'debt.mortgageInterestRate',
-  'debt.mortgageLoanTermYears',
-  'debt.carLoan',
-  'debt.studentLoan',
-  'debt.otherDebt',
-  // assets
-  'assets.savings',
-  'assets.securities',
-  'assets.nisa',
-  'assets.ideco',
-  'assets.cash',
-  'assets.other',
-]);
-
-/**
- * AIの提案をLifePlanに適用するための更新オブジェクトを生成する。
- * updatePlan(Partial<LifePlan>) に渡せる形式で返す。
- */
-export function applyProposalToPlan(
-  plan: LifePlan,
-  proposal: AIProposal
-): Partial<LifePlan> {
-  const updates: Record<string, Record<string, unknown>> = {};
-
-  for (const change of proposal.changes) {
-    if (!ALLOWED_PATHS.has(change.path)) continue;
-    if (typeof change.value !== 'number' || !isFinite(change.value)) continue;
-
-    const [section, field] = change.path.split('.');
-    if (!section || !field) continue;
-
-    if (!updates[section]) {
-      // 既存のセクションデータをコピー
-      updates[section] = { ...(plan[section as keyof LifePlan] as unknown as Record<string, unknown>) };
-    }
-    updates[section][field] = change.value;
-  }
-
-  return updates as Partial<LifePlan>;
-}
-
-/** パスのラベル一覧（システムプロンプト用） */
+/** パスのラベル一覧（システムプロンプト用）。このオブジェクトが許可パスの単一ソース。 */
 export const PATH_LABELS: Record<string, string> = {
   'income.selfAnnualIncome': '本人年収',
   'income.spouseAnnualIncome': '配偶者年収',
@@ -115,3 +41,33 @@ export const PATH_LABELS: Record<string, string> = {
   'assets.cash': '現金',
   'assets.other': 'その他資産',
 };
+
+/** 許可するパスのホワイトリスト（PATH_LABELS から自動生成） */
+const ALLOWED_PATHS = new Set(Object.keys(PATH_LABELS));
+
+/**
+ * AIの提案をLifePlanに適用するための更新オブジェクトを生成する。
+ * updatePlan(Partial<LifePlan>) に渡せる形式で返す。
+ */
+export function applyProposalToPlan(
+  plan: LifePlan,
+  proposal: AIProposal
+): Partial<LifePlan> {
+  const updates: Record<string, Record<string, unknown>> = {};
+
+  for (const change of proposal.changes) {
+    if (!ALLOWED_PATHS.has(change.path)) continue;
+    if (typeof change.value !== 'number' || !isFinite(change.value)) continue;
+
+    const [section, field] = change.path.split('.');
+    if (!section || !field) continue;
+
+    if (!updates[section]) {
+      // 既存のセクションデータをコピー
+      updates[section] = { ...(plan[section as keyof LifePlan] as unknown as Record<string, unknown>) };
+    }
+    updates[section][field] = change.value;
+  }
+
+  return updates as Partial<LifePlan>;
+}
