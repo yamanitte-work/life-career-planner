@@ -1,5 +1,4 @@
 import { AIProposal, PlanChange } from './types';
-import { generateId } from './id';
 
 const PROPOSAL_PATTERN = /```proposal\s*\n([\s\S]*?)```/g;
 
@@ -15,6 +14,16 @@ export type ProposalSegment =
 function safeNumber(v: unknown, fallback: number): number {
   const n = Number(v);
   return isNaN(n) ? fallback : n;
+}
+
+/** コンテンツから再現可能な安定IDを生成する */
+function stableId(title: string, description: string, changes: PlanChange[]): string {
+  const key = `${title}|${description}|${changes.map((c) => `${c.path}:${c.value}`).join(',')}`;
+  let h = 5381;
+  for (let i = 0; i < key.length; i++) {
+    h = (Math.imul(31, h) + key.charCodeAt(i)) | 0;
+  }
+  return 'p' + Math.abs(h).toString(36);
 }
 
 export function parseProposals(content: string): ParseResult {
@@ -44,10 +53,12 @@ export function parseProposals(content: string): ParseResult {
           label: String(c.label || c.path || ''),
         }));
 
+      const title = String(json.title || '提案');
+      const description = String(json.description || '');
       const proposal: AIProposal = {
-        id: generateId(),
-        title: String(json.title || '提案'),
-        description: String(json.description || ''),
+        id: stableId(title, description, changes),
+        title,
+        description,
         changes,
       };
       proposals.push(proposal);

@@ -29,8 +29,8 @@ export default function DashboardPage() {
   const simulationData = useMemo(() => runSimulation(plan, 30), [plan]);
   const currentData = simulationData[0];
   const milestoneMetrics = useMemo(
-    () => calcMilestoneMetrics(simulationData, plan.household.self.age),
-    [simulationData, plan.household.self.age]
+    () => calcMilestoneMetrics(simulationData),
+    [simulationData]
   );
 
   const compareScenario = useMemo(

@@ -29,7 +29,7 @@ describe('calcMilestoneMetrics', () => {
       makeRow({ year: 2028, age: 60, netAssets: 25000000 }),
       makeRow({ year: 2029, age: 61, netAssets: 24000000 }),
     ];
-    const m = calcMilestoneMetrics(data, 58);
+    const m = calcMilestoneMetrics(data);
     expect(m.netAssetsAt60).toBe(25000000);
   });
 
@@ -38,7 +38,7 @@ describe('calcMilestoneMetrics', () => {
       makeRow({ year: 2026, age: 30 }),
       makeRow({ year: 2027, age: 31 }),
     ];
-    const m = calcMilestoneMetrics(data, 30);
+    const m = calcMilestoneMetrics(data);
     expect(m.netAssetsAt60).toBeNull();
   });
 
@@ -48,7 +48,7 @@ describe('calcMilestoneMetrics', () => {
       makeRow({ year: 2027, age: 36, annualExpense: 6000000 }),
       makeRow({ year: 2028, age: 37, annualExpense: 5000000 }),
     ];
-    const m = calcMilestoneMetrics(data, 35);
+    const m = calcMilestoneMetrics(data);
     expect(m.peakExpenseYear).toEqual({ year: 2027, age: 36, amount: 6000000 });
   });
 
@@ -58,7 +58,7 @@ describe('calcMilestoneMetrics', () => {
       makeRow({ year: 2027, age: 41, annualEducationExpense: 1200000 }),
       makeRow({ year: 2028, age: 42, annualEducationExpense: 800000 }),
     ];
-    const m = calcMilestoneMetrics(data, 40);
+    const m = calcMilestoneMetrics(data);
     expect(m.peakEducationYear).toEqual({ year: 2027, age: 41, amount: 1200000 });
   });
 
@@ -67,7 +67,7 @@ describe('calcMilestoneMetrics', () => {
       makeRow({ year: 2026, age: 30, annualEducationExpense: 0 }),
       makeRow({ year: 2027, age: 31, annualEducationExpense: 0 }),
     ];
-    const m = calcMilestoneMetrics(data, 30);
+    const m = calcMilestoneMetrics(data);
     expect(m.peakEducationYear).toBeNull();
   });
 
@@ -77,7 +77,7 @@ describe('calcMilestoneMetrics', () => {
       makeRow({ year: 2027, age: 51, netAssets: -100000 }),
       makeRow({ year: 2028, age: 52, netAssets: -500000 }),
     ];
-    const m = calcMilestoneMetrics(data, 50);
+    const m = calcMilestoneMetrics(data);
     expect(m.negativeNetAssetsYear).toEqual({ year: 2027, age: 51 });
   });
 
@@ -86,7 +86,7 @@ describe('calcMilestoneMetrics', () => {
       makeRow({ year: 2026, age: 30, netAssets: 5000000 }),
       makeRow({ year: 2027, age: 31, netAssets: 6000000 }),
     ];
-    const m = calcMilestoneMetrics(data, 30);
+    const m = calcMilestoneMetrics(data);
     expect(m.negativeNetAssetsYear).toBeNull();
   });
 
@@ -96,7 +96,7 @@ describe('calcMilestoneMetrics', () => {
       makeRow({ year: 2027, age: 31, annualSavings: -500000 }),
       makeRow({ year: 2028, age: 32, annualSavings: 2000000 }),
     ];
-    const m = calcMilestoneMetrics(data, 30);
+    const m = calcMilestoneMetrics(data);
     expect(m.lifetimeBalance).toBe(2500000);
   });
 });

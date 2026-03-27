@@ -156,6 +156,9 @@ export default function ChatPanel() {
     if (Object.keys(updates).length > 0) {
       updatePlan(updates);
       setAppliedProposalIds((prev) => new Set(prev).add(proposal.id));
+      setError(null);
+    } else {
+      setError('この提案は反映できる項目がありません');
     }
   }, [plan, updatePlan]);
 

@@ -8,10 +8,7 @@ export interface MilestoneMetrics {
   lifetimeBalance: number;
 }
 
-export function calcMilestoneMetrics(
-  data: SimulationYearData[],
-  selfAge: number
-): MilestoneMetrics {
+export function calcMilestoneMetrics(data: SimulationYearData[]): MilestoneMetrics {
   if (data.length === 0) {
     return {
       netAssetsAt60: null,

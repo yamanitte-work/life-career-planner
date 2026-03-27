@@ -59,9 +59,9 @@ export default function MilestoneCards({ metrics }: Props) {
       icon: metrics.negativeNetAssetsYear ? '⚠️' : '✅',
     },
     {
-      label: '生涯収支バランス',
+      label: '30年累計収支バランス',
       value: formatMan(metrics.lifetimeBalance),
-      sub: `${metrics.lifetimeBalance >= 0 ? '黒字' : '赤字'}（30年累計）`,
+      sub: metrics.lifetimeBalance >= 0 ? '黒字' : '赤字',
       color: metrics.lifetimeBalance >= 0
         ? 'bg-blue-50 border-blue-200'
         : 'bg-red-50 border-red-200',
