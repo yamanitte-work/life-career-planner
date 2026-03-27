@@ -216,9 +216,22 @@ export default function ChatPanel() {
             tabIndex={-1}
             onClick={() => setShowSessionDrawer(false)}
           />
-          <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-xl z-50 lg:hidden flex flex-col">
+          <div
+            className="fixed inset-y-0 left-0 w-64 bg-white shadow-xl z-50 lg:hidden flex flex-col"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="chat-session-drawer-title"
+            tabIndex={-1}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                e.stopPropagation();
+                e.preventDefault();
+                setShowSessionDrawer(false);
+              }
+            }}
+          >
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-              <p className="text-sm font-semibold text-gray-700">チャット履歴</p>
+              <p id="chat-session-drawer-title" className="text-sm font-semibold text-gray-700">チャット履歴</p>
               <button
                 onClick={() => setShowSessionDrawer(false)}
                 className="p-1 rounded hover:bg-gray-100 text-gray-500"

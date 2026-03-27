@@ -11,11 +11,6 @@ export type ProposalSegment =
   | { type: 'text'; content: string }
   | { type: 'proposal'; proposal: AIProposal };
 
-function safeNumber(v: unknown, fallback: number): number {
-  const n = Number(v);
-  return isNaN(n) ? fallback : n;
-}
-
 /** コンテンツから再現可能な安定IDを生成する */
 function stableId(title: string, description: string, changes: PlanChange[]): string {
   const key = `${title}|${description}|${changes.map((c) => `${c.path}:${c.value}`).join(',')}`;
