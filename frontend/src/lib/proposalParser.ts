@@ -48,16 +48,20 @@ export function parseProposals(content: string): ParseResult {
           label: String(c.label || c.path || ''),
         }));
 
-      const title = String(json.title || '提案');
-      const description = String(json.description || '');
-      const proposal: AIProposal = {
-        id: stableId(title, description, changes),
-        title,
-        description,
-        changes,
-      };
-      proposals.push(proposal);
-      segments.push({ type: 'proposal', proposal });
+      if (changes.length === 0) {
+        segments.push({ type: 'text', content: match[0] });
+      } else {
+        const title = String(json.title || '提案');
+        const description = String(json.description || '');
+        const proposal: AIProposal = {
+          id: stableId(title, description, changes),
+          title,
+          description,
+          changes,
+        };
+        proposals.push(proposal);
+        segments.push({ type: 'proposal', proposal });
+      }
     } catch {
       // パース失敗時はテキストとして扱う
       segments.push({ type: 'text', content: match[0] });

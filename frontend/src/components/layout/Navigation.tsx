@@ -18,6 +18,14 @@ export default function Navigation() {
     setIsOpen(false);
   }, [pathname]);
 
+  // Escape キーでメニューを閉じる
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsOpen(false); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [isOpen]);
+
   return (
     <nav className="bg-indigo-700 text-white px-6 py-3 flex items-center justify-between relative">
       <Link href="/" className="text-xl font-bold">💑 ライフプランナー</Link>
@@ -43,6 +51,7 @@ export default function Navigation() {
         onClick={() => setIsOpen(!isOpen)}
         aria-label={isOpen ? 'メニューを閉じる' : 'メニューを開く'}
         aria-expanded={isOpen}
+        aria-controls="mobile-nav-menu"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
           {isOpen ? (
@@ -69,7 +78,7 @@ export default function Navigation() {
             tabIndex={-1}
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute top-full right-0 left-0 bg-indigo-700 border-t border-indigo-600 z-50 md:hidden shadow-lg">
+          <div id="mobile-nav-menu" className="absolute top-full right-0 left-0 bg-indigo-700 border-t border-indigo-600 z-50 md:hidden shadow-lg">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
