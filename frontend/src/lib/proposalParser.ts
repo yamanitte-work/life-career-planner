@@ -1,6 +1,6 @@
 import { AIProposal, PlanChange } from './types';
 
-const PROPOSAL_PATTERN = /```proposal\s*\n([\s\S]*?)```/g;
+const PROPOSAL_PATTERN = /```proposal[^\S\r\n]*\r?\n([\s\S]*?)(?:\r?\n?```[^\S\r\n]*)/g;
 
 interface ParseResult {
   segments: ProposalSegment[];

@@ -65,8 +65,16 @@ export default function Navigation() {
         <>
           <div
             className="fixed inset-0 bg-black/30 z-40 md:hidden"
-            aria-hidden="true"
+            role="button"
+            tabIndex={0}
+            aria-label="メニューを閉じる"
             onClick={() => setIsOpen(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault();
+                setIsOpen(false);
+              }
+            }}
           />
           <div className="absolute top-full right-0 left-0 bg-indigo-700 border-t border-indigo-600 z-50 md:hidden shadow-lg">
             {NAV_LINKS.map((link) => (

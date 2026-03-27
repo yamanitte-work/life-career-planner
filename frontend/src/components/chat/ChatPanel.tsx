@@ -142,6 +142,7 @@ export default function ChatPanel() {
   const handleLoadSession = (session: ChatSession) => {
     setSessionId(session.id);
     setMessages(session.messages);
+    setAppliedProposalIds(new Set());
   };
 
   const handleNewChat = () => {
@@ -149,6 +150,7 @@ export default function ChatPanel() {
     setMessages([]);
     setStreamingContent('');
     setError(null);
+    setAppliedProposalIds(new Set());
   };
 
   const handleApplyProposal = useCallback((proposal: AIProposal) => {
